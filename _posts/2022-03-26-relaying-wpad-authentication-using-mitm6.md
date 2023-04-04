@@ -29,7 +29,7 @@ layout: post
 
 默认情况下，计算机将使用 “自动检测设置”，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220416203216508.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220416203216508.png)
 
 WPAD 协议通过让浏览器自动发现代理服务器，定位代理配置文件，下载编译并运行，最终自动使用代理访问网络。
 
@@ -46,7 +46,7 @@ function FindProxyForURL(url, host) {
 
 WPAD 协议自动定位配置文件的一般请求流程如下图所示：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417125127006.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417125127006.png)
 
 用户在访问网页时，首先会查询 PAC 文件的位置，然后获取 PAC 文件，将 PAC 文件作为代理配置文件。其中，查询 PAC 文件的顺序如下：
 
@@ -93,11 +93,11 @@ function FindProxyForURL(url, host){
 
 （3）客户端会使用 `ProxySrv:3141` 作为代理地址，但是受害者不知道 `ProxySrv` 对应的 IP 是什么，所以会再次触发查询，Responder 将再次通过 LLMNR/NBNS 投毒进行欺骗。将 `ProxySrv` 名词所对应的地址指向 Responder 服务器本身。这样攻击者最终可以劫持客户端的 HTTP 流量，并通过在其流量中插入 XSS 向量、回复 HTTP 407 错误等方式来诱使客户端发起 NTLM 认证。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417102852320.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417102852320.png)
 
 值得注意的是，我们可以在 Responder 上开启 `-F` 选项，当客户端索取 wpad.dat 文件时就立即强制其执行 NTLM 认证，如下图所示。但由于该设置可能会弹出登录框，因此默认关闭。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417103104600.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417103104600.png)
 
 然而，微软在 2016 年发布了 MS16-077 安全公告，添加了两个重要的保护措施，以缓解此类攻击行为：
 
@@ -116,7 +116,7 @@ MS16-077 之后，系统再也无法通过多播或广播协议来解析 PAC 文
 
 幸运的是，安全研究人员并不将眼光局限于 IPv4。从 Windows Vista 以来，所有的 Windows 系统都会启用 IPv6 网络，并且其优先级要高于 IPv4 网络。在 DHCPv6 协议中，客户端将定期通过向多播地址发送 Solicit 报文来定位 DHCPv6 服务器，并与 DHCPv6 服务器执行消息交换，以获取 IPv6 地址和相关配置设置，如下图所示。多播地址 `[ff02::1:2]` 包括整个地址链路范围内的所有 DHCPv6 服务器和中继代理。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417204057986.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417204057986.png)
 
 在 DHCPv6 协议中，客户端使用 UDP 546 端口，服务器使用 547 端口。DHCPv6 的四步交互过程如下，其中 DHCPv6 服务器的链路本地地址是 `fe80::0011:22ff:fe33:5566`，客户端的链路本地地址是 `fe80::aabb:ccff:fedd:eeff`。
 
@@ -135,25 +135,25 @@ MS16-077 之后，系统再也无法通过多播或广播协议来解析 PAC 文
 mitm6 -d pentest.com -i eth0
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417111026219.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417111026219.png)
 
 （2)记录当前攻击者服务器的 IPv6 地址为 `fe80::20c:29ff:fee2:1920`。当客户端向 DHCPv6 轮询 IPv6 网络配置时，mitm6 将回复这些 DHCPv6 请求，并在本地链接范围内为客户端分配一个 IPv6 地址。尽管在实际的 IPv6 网络中，这些地址是由主机自己自动分配的，不需要由 DHCP 服务器配置，但这使我们有机会将攻击者 IP 设置为客户端默认的 IPv6 DNS 服务器。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417113259272.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417113259272.png)
 
 如下图所示，此时客户端的 DNS 服务器的地址已经设置为攻击者的 IPv6 地址，成功接管客户端的 DNS。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417110409990.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417110409990.png)
 
 我们对整个攻击过程进行抓包，如下图所示。可以看到客户端从 `fe80::2593:ea01:af72:5623` 向多播地址 `ff02::1:2` 发送 Solicit 消息，此时攻击者的 mitm6 从 `fe80::20c:29ff:fee2:1920` 给客户端响应 Advertise 消息，之后攻击者代替真正的 DHCPv6 服务器来与进行客户端交互。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417205724544.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417205724544.png)
 
 （3）一旦客户端机器将攻击者设置为 IPv6 DNS 服务器，它将立即通过 DNS 不断查询网络的 WPAD 配置。但此时这些查询消息都发送给了攻击者，因此攻击者将使用自己的 IP 地址作为 WPAD 对应的 IP 地址，并通过伪造 PAC 文件将代理指向攻击者自己，以并强制客户端执行 NTLM 认证。如下图所示，Responder 上先接收到了客户端机器账户的 Net-NTLM Hash，然后是用户账户的 Net-NTLM Hash。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417112633161.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417112633161.png)
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417112702930.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417112702930.png)
 
 ## 中继 WPAD 身份验证
 
@@ -168,11 +168,11 @@ python ntlmrelayx.py -wh 172.26.10.134 -t smb://172.26.10.13 -smb2support --ipv6
 # -c 指定要在目标服务器上执行的命令
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417131718366.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417131718366.png)
 
 启动 mitm6 毒化后，ntlmrelayx.py 上成功截获客户端（172.26.10.21）的 NTLM 认证请求，并将其中继到目标服务器（172.26.10.13）。如下图所示，成功在目标服务器上执行系统命令。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220417131118939.png)
+![](/assets/posts/2022-03-26-relaying-wpad-authentication-using-mitm6/image-20220417131118939.png)
 ## Ending......
 
 参考文献：

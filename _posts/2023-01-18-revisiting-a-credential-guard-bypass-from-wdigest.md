@@ -27,18 +27,18 @@ Windows Defender Credential Guard 使用基于虚拟化的安全性来隔离机�
 
 下面简要概述了如何使用基于虚拟化的安全性来隔离 LSA：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/credguard.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/credguard.png)
 > Source：[How Credential Guard works](https://learn.microsoft.com/en-us/windows/security/identity-protection/credential-guard/credential-guard-how-it-works)
 
 如果我们在启用了 Credential Guard 的系统上尝试使用 Mimikatz 从 LSASS 进程内存中提取凭证，我们会观察到以下结果。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230117224919974.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230117224919974.png)
 
 如上图所示，我们无法从 LSASS 内存中提取任何凭据，NTLM 哈希处显示的是 “LSA Isolated Data: NtlmHash”。并且，即便已经通过修改注册表启用了 Wdigest，也依然获取不到任何明凭据。
 
 为了进行比较，下图所示为不受 Credential Guard 保护的系统上的输出。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230117225440767.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230117225440767.png)
 
 从 Windows 11 Enterprise, Version 22H2 和 Windows 11 Education, Version 22H 开始，兼容系统默认已启用 Windows Defender Credential Guard。不过，通过本篇文章的方法，可以轻松绕过 Credential Guard，并获取明文凭据。
 
@@ -59,13 +59,13 @@ C:\Users\Administrator\Desktop> reg add HKLM\SYSTEM\CurrentControlSet\Control\Se
 
 `RegQueryValueExW()` 函数检索 UseLogonCredential 注册表值，并由 `g_fParameter_UseLogonCredential` 接收，显然这个变量受前面提到的注册表键值的控制，并决定 Wdigest 后续是否缓存明文凭据。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230117231930807.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230117231930807.png)
 
 因此，如果我们将 LSASS 内存中的 `g_fParameter_UseLogonCredential` 变量值改为 1，也许可以在不更新注册表的情况下获取明文凭据。我们通过 WinDbg 进行内存修补。需要注意的是，由于无法将直接将 WinDbg 附加到 lsass.exe，我们需要先 Attach 内核，并切换到 lsass.exe 进程，相关细节请读者自行上网查阅，这里不再赘述。
 
 （1）首先我们确定当前系统禁用了 Wdigest，并且 Credential Guard 没有启用，如下图所示，可以转储 Administrator 用户的哈希，但是无法提取明文密码。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230117233804922.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230117233804922.png)
 
 （2）通过 WinDbg 调试器修补内存，将 `g_fParameter_UseLogonCredential` 变量值改为 1，如下图所示。
 
@@ -73,11 +73,11 @@ C:\Users\Administrator\Desktop> reg add HKLM\SYSTEM\CurrentControlSet\Control\Se
 ed wdigest!g_fParameter_UseLogonCredential 1
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230117234559641.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230117234559641.png)
 
 （3）当 Administrator 用户重新输入用户名密码进行身份验证时，即可提取到其明文密码。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230117234855436.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230117234855436.png)
 
 但这是适用于 Credential Guard 禁用的情况下，如果目标系统开启了 Credential Guard 保护，即便将 `g_fParameter_UseLogonCredential` 值设为 1 也无法让 Wdigest 缓存明文凭据。
 
@@ -85,7 +85,7 @@ ed wdigest!g_fParameter_UseLogonCredential 1
 
 Adam Chester 的文章中提到的第二个全局变量是 `g_IsCredGuardEnabled`，该变量用于保存模块内 Credential Guard 的状态，并决定 Wdigest 后续是否使用 Credential Guard 兼容的功能。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230118115006090.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230118115006090.png)
 当在系统上启用 Credential Guard 时，`g_IsCredGuardEnabled` 的值设置为 ，取消设置此值或将其设为 0 也许可以绕过 Credential Guard 保护。
 
 接下来，笔者通过 C/C++ 创建了 [BypassCredGuard](https://github.com/wh0Nsq/BypassCredGuard) 项目，尝试在 LSASS 内存中修补两个变量的值。这最终可以欺骗 WDigest 模块，使其表现得好像未启用 Credential Guard 保护并且系统配置为在内存中缓存明文密码。一旦这两个值在 LSASS 进程中被正确修补，将在下一次用户输入用户名密码进行身份验证时保存用户的明文密码。
@@ -96,11 +96,11 @@ Adam Chester 的文章中提到的第二个全局变量是 `g_IsCredGuardEnabled
 
 以 Windows 10 x64, Version 1903 系统为例，在 wdigest.dll 中搜索 `g_fParameter_useLogonCredential` 变量可以在右侧的看到所有引用过它的地方，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230118130333809.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230118130333809.png)
 
 第一个出现的函数为 `SpAcceptCredentials()`，可以查看此处的汇编代码：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230118220219077.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230118220219077.png)
 
 ```php
 39 1D B3 38 03 00             cmp     cs:g_fParameter_UseLogonCredential, ebx
@@ -118,11 +118,11 @@ Adam Chester 的文章中提到的第二个全局变量是 `g_IsCredGuardEnabled
 
 在这个例子中，我们可以将第 6 行开始的字节序列 `41 B4 01 44 88 A4 24 A8 00 00 00 85 C0 ` 作为特征码，得到地址为 `0x18000187D`。然后减去 16 个字节定位到保存 `g_fParameter_UseLogonCredential` 偏移量的四个字节序列，取出偏移量为 `0x338B3`，最后可以计算出 `g_fParameter_UseLogonCredential` 的地址为 `0x18000187D - Hex(16) + Hex(4) + 0x338B3 = 0x180035124`，如下图所示位置。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230118134828228.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230118134828228.png)
 
 同理可以获得 `g_IsCredGuardEnabled` 变量的地址为 `0x18000187D - Hex(10) + Hex(4) + 0x33311 = 0x180034B88`，如下图所示位置。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230118135056302.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230118135056302.png)
 
 ### Main Function
 
@@ -619,7 +619,7 @@ BOOL PatchMemory()
 C:\Users\Administrator\Desktop> BypassCredGuard.exe
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230118230536164.png)
+![](/assets/posts/2023-01-18-revisiting-a-credential-guard-bypass-from-wdigest/image-20230118230536164.png)
 ## Ending......
 
 其实，早在 2020 年 8 月，Team Hydra（[@N4k3dTurtl3](https://twitter.com/N4k3dTurtl3)）就在博客上发布了一篇名为 [《Bypassing Credential Guard》](https://teamhydra.blog/2020/08/25/bypassing-credential-guard/) 的文章，对这个非常聪明和简单技巧进行了讨论，并简单公布了一个概念性的 [CredGuard_PoC](https://gist.github.com/N4kedTurtle/8238f64d18932c7184faa2d0af2f1240)，不过它并不适用于所有的 Windows 系统。

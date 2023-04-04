@@ -35,7 +35,7 @@ Windows 系统提供了与 `RpcImpersonateClient()` 功能相似的 `Impersonate
 Get-ChildItem "\\.\pipe\"
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520101638169.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520101638169.png)
 
 此外，微软 Sysinternals 工具包中的 pipelist.exe 工具也可以用来枚举管道列表：
 
@@ -43,7 +43,7 @@ Get-ChildItem "\\.\pipe\"
 C:\Users\Marcus\Desktop> pipelist.exe
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520101909651.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520101909651.png)
 
 ### Named Pipes Communication Example
 
@@ -199,7 +199,7 @@ void _tmain(int argc, TCHAR* argv[])
 
 分别运行服务端和客户端后，实现的效果如下图所示：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520110154706.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520110154706.png)
 
 ## Impersonate a Named Pipe Client
 
@@ -384,7 +384,7 @@ void GetSystem(HANDLE hNamedPipe)
 C:\Users\Marcus\Desktop> echo "Pipe datas from client" > \\.\pipe\pipename
 ```
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520110254709.gif)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520110254709.gif)
 
 需要注意的是，调用 `CreateProcessWithToken()` 和 `CreateProcessAsUser()` 函数必须分别拥有 SeImpersonatePrivilege 和 SeAssignPrimaryTokenPrivilege 特权，而拥有这两项特权的一般是以下账户：
 
@@ -413,7 +413,7 @@ C:\Users\Marcus\Desktop> echo "Pipe datas from client" > \\.\pipe\pipename
 
 在本文中，我们通过 RpcView 工具来获取上述信息。选中 lsass.exe 进程，通过 GUID 在左下角的 “Interfaces” 窗口中找到 MS-EFSR 接口，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520212617469.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520212617469.png)
 
 右下角的 “Procedures” 窗口中显示了该接口公开的所有过程列表，这里我们选择 `EfsRpcOpenFileRaw()` 方法。此外，在左上角的 “Endpoints” 窗口中可知，当前接口是通过命名管道 `\pipe\lsass` 和 `\pipe\efsrpc` 公开的。右上角的 “Processes Properties” 窗口告诉我们该接口的过程以 NT AUTHORITY\SYSTEM 账户权限运行。
 
@@ -421,7 +421,7 @@ C:\Users\Marcus\Desktop> echo "Pipe datas from client" > \\.\pipe\pipename
 
 这里我们直接在 RpcView 选中接口的 GUID，“右键” —> “Decompile” 进行反编译，将在左侧的 “Decompilation” 窗口中得到接口的 IDL 代码，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520214952785.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520214952785.png)
 
 反编译得到的代码如下所示：
 
@@ -473,11 +473,11 @@ C:\Users\Marcus\Desktop> echo "Pipe datas from client" > \\.\pipe\pipename
 
 到目前为止，我们已经拥有了调用 MS-EFSR RPC 接口需要的全部信息，我们可以在 visual Studio 中 创建一个 C/C++ 项目，编写一个 RPC 客户端开始使用该接口。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520215601778.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520215601778.png)
 
 在解决方案资源管理器中选择 “源文件”，右键 “添加” —> “新建项”，添加一个名为 “ms-efsr.idl” 的文件，并将之前反编译得到的 IDL 代码复制进去。然后，我们需要选中 ms-efsr.idl 文件，“右键”—>“编译”。一切顺利的话将看到如下图所示的输出信息：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520220357781.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520220357781.png)
 
 此时，MIDL 编译器将创建了以下 3 个文件：
 
@@ -489,7 +489,7 @@ C:\Users\Marcus\Desktop> echo "Pipe datas from client" > \\.\pipe\pipename
 
 这里需要用到的有 ms-efsr_h.h 和 ms-efsr_c.c，我们可以分别在解决方案资源管理器中选择 “头文件” 和 “源文件”，分别右键 “添加” —> “现有项” 将他们添加进来：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520221102578.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520221102578.png)
 
 到这里，我们终于可以编写并运行 RPC 客户端代码了：
 
@@ -605,25 +605,25 @@ void __RPC_USER midl_user_free(void __RPC_FAR* p)
 
 > 2021 年 12 月，Microsoft 发布了针对不同 EFSRPC 漏洞的补丁：CVE-2021-43217。作为该问题补救措施的一部分，Microsoft 对 EFSRPC 通信实施了一些强化措施。特别是，EFSRPC 客户端在使用 EFSRPC 时需要将身份验证级别设为 RPC_C_AUTHN_LEVEL_PKT_PRIVACY。如果客户端未能这样做，则客户端将被拒绝并生成 Windows 应用程序事件。
 >
-> ![image-20230315130337156](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230315130337156.png)
+> ![image-20230315130337156](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20230315130337156.png)
 
 现在，让我们编译并运行上述代码，同时使用 Process Monitor 监视后台进程。可以看到，lsass.exe 进程试图访问 `\\127.0.0.1\C$\Folder\test.txt` 这个 UNC 路径的文件，如下图所示。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520225037190.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520225037190.png)
 
 双击该条目查看更多细节，我们可以看到，RPC 服务器实际上是在模拟客户端，如下图所示。然而，我们在前文中模拟管道客户端时，需要的是 NT AUTHORITY\SYSTEM 这样的特权账户，很明显这不符合我们的要求。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520225113801.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520225113801.png)
 
 在此观察 Process Monitor 中的条目会发现，lsass.exe 进程在访问 `\\127.0.0.1\C$\Folder\test.txt` 文件之前，会先打开 `\\127.0.0.1\PIPE\srvsvc` 这个命名管道，并且这一次没有模拟客户端：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520232747419.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520232747419.png)
 
 如果阅读过 [*PrintSpoofer - Abusing Impersonation Privileges on Windows 10 and Server 2019*](https://itm4n.github.io/printspoofer-abusing-impersonate-privileges/) 这篇文章，你会发现在 PrintSpoofer 中也出现过类似的行为，它试图打开命名管道 `\pipe\spoolss`。
 
 此外，根据 PrintSpoofer 文中介绍的一个非常关键的 Trick，如果我们指定管道路径为 `\\127.0.0.1/pipe/pipename\C$\test.txt`，当客户端连接时，会自动将其转换为`\\127.0.0.1\pipe\pipename\PIPE\srvsvc`，如下图所示。通过这一点可以欺骗客户端连接至我们控制的命名管道。
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220520234531026.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220520234531026.png)
 
 并且，由于 lsass.exe 进程以 `NT AUTHORITY\SYSTEM` 帐户权限运行，当在已加入域的计算机上使用远程路径调用此过程时，Windows 将实际使用计算机帐户在 UAC 路径所指向的服务器上进行身份验证。这就解释了为什么 “PetitPotam” 能够强制任意 Windows 机器对另一台机器进行身份验证。
 
@@ -1094,18 +1094,18 @@ cleanup:
 
 - Administrator —> SYSTEM
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220521003336219.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220521003336219.png)
 
 - Local Service (IIS) —> SYSTEM
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220521003520211.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220521003520211.png)
 
 - Local Service (SQL Server) —> SYSTEM
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220521010549799.png)
+![](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20220521010549799.png)
 
 ## Forced authentication still not entirely patched
 
 Microsoft 针对 EFSRPC 强制身份验证已发布了一系列修补措施，但是强制身份验证仍未完全修补。截至目前（2023/03/15），通过为 EFSRPC 指定 RPC_C_AUTHN_LEVEL_PKT_PRIVACY 身份验证级别，我们可以在最新版的 Windows 系统（Windows 21H2 10.0.20348.1547）上成功提升至 SYSTEM 权限。
 
-![image-20230315131532296](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20230315131532296.png)
+![image-20230315131532296](/assets/posts/2022-05-21-petitpotato-how-do-I-escalate-to-system-via-named-pipe/image-20230315131532296.png)

