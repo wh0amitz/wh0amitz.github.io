@@ -1,3 +1,13 @@
+---
+title: Creating Windows Access Tokens With God Privilege
+date: 2023-07-06 17:57:00 +0800
+author: WHOAMI
+toc: true
+categories: ["Windows Security"]
+tags: ["Windows Privileges", "Privilege Escalation"]
+layout: post
+---
+
 # SeCreateTokenPrivilege
 
 在 Windows 系统中，存在一个名为 SeCreateTokenPrivilege 的特权，它在 Microsoft 官方文档中被描述为 “*Create a token object*”。它被认为是 “上帝” 权限，因为拥有该特权的任何进程能够通过 ZwCreateToken API 创建主令牌，该函数是 Windows 操作系统的 Native API，其语法如下。
@@ -662,6 +672,8 @@ BOOL ExploitSeCreateTokenPrivilege(LPCWSTR sourceFile, LPCWSTR destFile)
 }
 ```
 
+你可以在这里找到我完整的 POC 代码：[ExploitSeCreateTokenPrivilege.cpp](https://gist.github.com/wh0amitz/62b1522609c77ab06a393fc756d62316)
+
 # Let’s see it in action
 
 编译上述 POC，上传到目标主机，在拥有 SeCreateTokenPrivilege 特权的账户下执行以下命令，即可向 C:\Windows\System32\ 目录中写入一个恶意 DLL 文件，如下图所示。
@@ -682,7 +694,23 @@ SeCreateTokenPrivilege.exe -s malicious.dll -d C:\Windows\System32\malicious.dll
 
 这是由于在安装了 *KB4507459* 补丁之后，微软添加了一些补充检查。我们生成的令牌被认为是 “特权” 的，因为它具有 “上帝” 特权和强大的组成员身份，因此新的附加控件将由于缺乏授予调用进程的特定模拟特权而将令牌的模拟级别被自动降级为 SecurityIdentification，该级别的令牌服务器不能模拟客户端。
 
-但永远不要放弃！还记得 `ZwCreateToken()` 函数中的 AuthenticationId 吗？在之前，它被设置为 SYSTEM_LUID（0x3e7），也就是 SYSTEM 帐户的登录会话 ID。现在，让我们尝试更改它并为其分配 ANONYMOUS_LOGON_LUID（0x3e6）也许这一项被认为是无害的，但是所有后续检查都被跳过。
+但永远不要放弃！还记得 `ZwCreateToken()` 函数中的 AuthenticationId 吗？在之前，它被设置为 SYSTEM_LUID（0x3e7），也就是 SYSTEM 帐户的登录会话 ID。现在，让我们尝试更改它并为其分配 ANONYMOUS_LOGON_LUID（0x3e6），如下所示，也许这一项被认为是无害的，但是所有后续检查都被跳过。
+
+```c++
+HANDLE CreateUserToken(HANDLE hToken)
+{
+	// ...
+	LUID AuthenticationId = ANONYMOUS_LOGON_LUID;
+	// ...
+	Status = ZwCreateToken(
+		&pElevatedToken,
+		// ...
+		&AuthenticationId,
+		// ...
+	);
+	// ...
+}
+```
 
 如下图所示，我们成功在最新的 Windows 版本（Windows Server 2022 21H2 20348.1726）上利用 SeCreateTokenPrivilege 实现任意文件写入。
 
