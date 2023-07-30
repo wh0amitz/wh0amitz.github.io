@@ -8,8 +8,6 @@ tags: ["Kerberos", "UAC Bypass", "Privilege Escalation"]
 layout: post
 ---
 
-[toc]
-
 ## Background
 
 The inspiration for this article comes from James Forshaw ([@tiraniddo](https://twitter.com/tiraniddo)) who presented a topic titled "*[Taking Kerberos To The Next Level](https://i.blackhat.com/USA-22/Wednesday/US-22-Forshaw-Taking-Kerberos-To-The-Next-Level.pdf)*" at BlackHat USA 2022. In his presentation, he demonstrated the abuse of Kerberos tickets to bypass User Account Control (UAC) and also wrote a blog post titled "[*Bypassing UAC in the most Complex Way Possible!*](https://www.tiraniddo.dev/2022/03/bypassing-uac-in-most-complex-way.html)" to explain the underlying principles. This caught my keen interest.
