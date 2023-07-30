@@ -36,10 +36,6 @@ As early as January 2021, Microsoft's Steve Syfuhs (@SteveSyfuhs) published an a
 >
 > *However, if it does have this nonce, LSA will inform the Kerberos stack that it originally came from user so and so, and most importantly that the user was not elevated at the time.”*
 
-这里提到了一个重要的元素就是 “*machine nonce*”，如果票据中的 “*machine nonce*” 值在目标服务机器上可以找到，那就说明发起 Kerberos 请求的客户端和目标服务位于同一台机器上。最重要的是，这将导致 LSASS 过滤网络令牌。
-
-我在微软 “*[[MS-KILE]: Kerberos Protocol Extensions](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-kile/2a32282e-dd48-4ad9-a542-609804b02cc9)*” 文档中记载的的 [LSAP_TOKEN_INFO_INTEGRITY](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-kile/ec551137-c5e5-476a-9c89-e0029473c41b) 结构中找到了这个 “*machine nonce*”，该结构 LSAP_TOKEN_INFO_INTEGRITY 结构指定客户端的完整性级别信息，如下所示，其中的 MachineID 成员就是 “*machine nonce*”。
-
 An important element mentioned here is the "*machine nonce*". If the value of the "*machine nonce*" in the ticket can be found on the target service machine, it indicates that the client initiating the Kerberos request and the target service are on the same machine. Most importantly, this will cause LSASS to filter the network token.
 
 I found this "*machine nonce*" in the [LSAP_TOKEN_INFO_INTEGRITY](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-kile/ec551137-c5e5-476a-9c89-e0029473c41b) structure documented in Microsoft's "*[[MS-KILE]: Kerberos Protocol Extensions](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-kile/2a32282e-dd48-4ad9-a542-609804b02cc9)*" document. The LSAP_TOKEN_INFO_INTEGRITY structure specifies client integrity level information, and the MachineID member in this structure is the "*machine nonce*," as shown below.
