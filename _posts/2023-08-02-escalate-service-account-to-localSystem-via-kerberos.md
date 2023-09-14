@@ -1,6 +1,6 @@
 ---
 title: S4UTomato - Escalate Service Account To LocalSystem via Kerberos
-date: 2023-07-30 19:32:00 +0800
+date: 2023-08-02 19:32:00 +0800
 author: WHOAMI
 toc: true
 categories: ["Windows Security"]
