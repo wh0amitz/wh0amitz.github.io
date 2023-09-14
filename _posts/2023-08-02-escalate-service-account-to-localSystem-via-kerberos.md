@@ -4,7 +4,7 @@ date: 2023-08-02 19:32:00 +0800
 author: WHOAMI
 toc: true
 categories: ["Windows Security"]
-tags: ["Kerberos", "Windows", "Privilege Escalation"]
+tags: ["Windows", "Kerberos", "Privilege Escalation"]
 layout: post
 ---
 
