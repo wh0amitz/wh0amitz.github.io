@@ -111,8 +111,6 @@ RODC 的 Krbtgt 帐户仅用于签署/加密已缓存并存储在 RODC 中的帐
 - Denied RODC Password Replication Policy: 拒绝
 - Server Operators: 拒绝
 
-此外，该图表还添加了在此实验环境中用于管理 RODC 的 RODC Admins 组。
-
 此外，有一些账户或组被添加到 “*Denied RODC Password Replication Group*” 组中，明确拒绝将其帐户密码复制到 RODC，这可以防止这些组中的帐户密码被保存在 RODC 上，默认情况下包含以下账户或组。需要注意的是，“拒绝” 的优先级总比 “允许” 要高。
 
 - Cert Publishers
