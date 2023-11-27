@@ -14,9 +14,9 @@ layout: post
 
 # How About Kerberos
 
-在任何机器加入域的情况下，只要能够以 Windows 服务账户或 Microsoft 虚拟帐户的身份运行代码，你都可以利用上述技巧进行本地特权提升，前提是 Active Directory 没有被加固以完全防范上述攻击。
-
 在 Windows 域环境中，SYSTEM、NT AUTHORITY\NETWORK SERVICE 和 Microsoft 虚拟帐户都被用作加入域的系统计算机帐户进行身份验证。理解这一点非常重要，因为在现代 Windows 版本中，大多数 Windows 服务默认使用 Microsoft 虚拟帐户运行。其中最值得注意的是 IIS 和 MSSQL，但我相信还有其他应用也在使用这些虚拟帐户。因此，我们可以滥用 S4U 扩展，获取到域管理员账户 Administrator 针对本地计算机的服务票据，然后借助 James Forshaw（[@tiraniddo](https://twitter.com/tiraniddo)）的 [*SCMUACBypass*](https://gist.github.com/tyranid/c24cfd1bd141d14d4925043ee7e03c82) 使用该票据创建系统服务，以获取 SYSTEM 权限。这可以达到与传统的 “Potato” 家族提权方法相同的效果。
+
+在任何机器加入域的情况下，只要能够以 Windows 服务账户或 Microsoft 虚拟帐户的身份运行代码，你都可以利用上述技巧进行本地特权提升，前提是 Active Directory 没有被加固以完全防范上述攻击。
 
 在此之前，我们需要获得本地计算机账户的 TGT。这并不容易，由于服务账户权限的限制，我们无法获取计算机的 Long-term Key，也就无法构造 KRB_AS_REQ 请求。因此，为了达到上述目的，我借助了基于资源的约束委派、Shadow Credentials 和 Tgtdeleg 三个技巧，并基于 [Rubeus](https://github.com/GhostPack/Rubeus#tgtdeleg) 工具集构建了我的项目：[S4UTomato](https://github.com/wh0amitz/S4UTomato)。
 
