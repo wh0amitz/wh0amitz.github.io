@@ -238,7 +238,7 @@ TMP file  : C:\Workspace\Mountpoint\pre63F0.tmp -> C:\Workspace\Bait\pre63F0.tmp
 Dest file : C:\Workspace\MountPoint\target.txt -> C:\Workspace\Bait\target.txt
 ```
 
-<img src="/Users/whoami/Library/Application Support/typora-user-images/image-20231203190158638.png" alt="image-20231203190158638" style="zoom:67%;" />
+<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/image-20231203190158638.png" alt="image-20231203190158638" style="zoom:67%;" />
 
 We switch the mountpoint and create the symbolic links:
 
@@ -248,7 +248,7 @@ Symlink 1: \RPC Control\pre63F0.tmp -> C:\Workspace\malicious.dll
 Symlink 2: \RPC Control\target.txt -> C:\Windows\System32\malicious.dll
 ```
 
-<img src="/Users/whoami/Library/Application Support/typora-user-images/image-20231203190111476.png" alt="image-20231203190111476" style="zoom:67%;" />
+<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/image-20231203190111476.png" alt="image-20231203190111476" style="zoom:67%;" />
 
 After this step:
 
@@ -258,7 +258,7 @@ TMP file  : C:\Workspace\MountPoint\pre63F0.tmp -> C:\Workspace\malicious.dll
 Dest file : C:\Workspace\MountPoint\target.txt -> C:\Windows\System32\malicious.dll
 ```
 
-<img src="/Users/whoami/Library/Application Support/typora-user-images/image-20231203185953148.png" alt="image-20231203185953148" style="zoom:67%;" />
+<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/image-20231203185953148.png" alt="image-20231203185953148" style="zoom:67%;" />
 
 This step can be accomplished by executing the following powershell cmdlet:
 
