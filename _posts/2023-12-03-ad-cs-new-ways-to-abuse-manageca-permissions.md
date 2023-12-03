@@ -14,7 +14,7 @@ This report documents a local elevation of privilege vulnerability in Active Dir
 
 This vulnerability has been successfully verified on the latest Windows system (as of October 24, 2023), and the system version is Windows Server 2022 Datacenter 21H2 (20348.2031).
 
-I have shared this trick at CTFCON 2023, and the slides and POC from the related conference are here: https://github.com/wh0amitz/CTFCON2023-POC
+I have shared this trick at CTFCON 2023, and the slides and POC from the related conference are here: [CTFCON2023-POC](https://github.com/wh0amitz/CTFCON2023-POC)
 
 # Description
 
