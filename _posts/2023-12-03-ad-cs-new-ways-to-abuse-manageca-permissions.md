@@ -256,7 +256,7 @@ TMP file  : C:\Workspace\MountPoint\pre63F0.tmp -> C:\Workspace\malicious.dll
 Dest file : C:\Workspace\MountPoint\target.txt -> C:\Windows\System32\malicious.dll
 ```
 
-<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/end" alt="end" style="zoom:67%;" />
+<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/end.png" alt="end" style="zoom:67%;" />
 
 This step can be accomplished by executing the following powershell cmdlet:
 
