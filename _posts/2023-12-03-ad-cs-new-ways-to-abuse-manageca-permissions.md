@@ -207,7 +207,7 @@ namespace SetOpLock
 }
 ```
 
-**However, it is crucial to emphasize that we must release the OpLock after Certsrv's initial access to the old target.txt and re-set the OpLock on the old target.txt before the first execution of SetRenameInformationFile manipulation on it. Only by following this sequence can we meet the requirements for vulnerability exploitation.**
+**However, it is crucial to emphasize that we must release the OpLock after Certsrv's initial access to the old target.txt and re-set the OpLock on the old target.txt before the first execution of SetRenameInformationFile manipulation on it. Only by following this sequence can we meet the requirements for vulnerability exploitation.** 
 
 **(5) Add two CDPs, As shown in the image below.**
 
