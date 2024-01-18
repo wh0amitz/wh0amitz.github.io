@@ -1,5 +1,5 @@
 ---
-title: WinT - 2024 第七届“强网杯”决赛 RPC 本地提权 Review
+title: WinT - 2023 第七届“强网杯”决赛 RPC 本地提权 Review
 date: 2024-01-18 23:26:00 +0800
 author: WHOAMI
 toc: true
