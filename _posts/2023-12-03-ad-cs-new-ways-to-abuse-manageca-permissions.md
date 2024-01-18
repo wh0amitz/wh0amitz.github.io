@@ -98,7 +98,7 @@ Therefore, we have successfully exploited the vulnerability, and the specific ex
 
 **(1) Create a directory with the following structure.**
 
-```cmd
+```powershell
 <DIR> C:\Workspace
 |__ <DIR> Bait
 |__ <DIR> MountPoint

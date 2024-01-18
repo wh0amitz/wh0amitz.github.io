@@ -4,7 +4,7 @@ date: 2022-05-21 01:08:00 +0800
 author: WHOAMI
 toc: true
 categories: ["Windows Security"]
-tags: ["Privilege Escalation", "Impersonate Privileges", "Potatoes"]
+tags: ["Privilege Escalation", "Impersonate Privileges", "Potatoes", "RPC"]
 layout: post
 ---
 
