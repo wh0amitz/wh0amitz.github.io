@@ -211,7 +211,7 @@ BOOL EnumerateLSA()
 编写 `AcquireLSA()` 函数，该函数定义如下。函数上面的 `LsassPackages[]` 是一个自定义的 `LSA_PACKAGE` 结构体数组，用于保存程序用到的 LSA 身份验证包的基本配置信息。如下所示，这里仅保存了一个 `Lsass_Msv1_0_Package` 成员，用于保存当前程序需要用到的 lsasrv.dll 模块名称、模块地址和映像文件大小等信息。
 
 ```c++
-LSA_PACKAGE Lsass_Msv1_0_Package = { TRUE, L"lsasrv.dll", {{NULL, 0, NULL}, FALSE, FALSE} };
+LSA_PACKAGE Lsass_Msv1_0_Package = { TRUE, L"lsasrv.dll", { { NULL, 0, NULL }, FALSE, FALSE } };
 ```
 
 `cLsass` 是一个自定义的 `LSA_CONTEXT` 结构体，用于保存 lsass.exe 进程句柄以及系统版本信息。
