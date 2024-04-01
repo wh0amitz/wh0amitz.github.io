@@ -603,6 +603,6 @@ WIN-PC8087$  Computer     Constrained w/ Protocol Transition  cifs/DC01/CORP
 
 ```
 
-## 说在最后
+## Say it at the end
 
 该项目由我独立完成，难免会存在一些 Bug。非常欢迎各位贡献者提交 issue 报告 bug 或提出新点子，共同完善项目！
