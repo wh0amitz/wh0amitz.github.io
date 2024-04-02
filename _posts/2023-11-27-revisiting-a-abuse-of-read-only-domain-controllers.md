@@ -372,13 +372,13 @@ Leandro Cuozzo ([@0xdeaddood](https://twitter.com/0xdeaddood)) 在他的文章 �
 
 KERB-KEY-LIST-REQ 结构用于请求 KDC 可以提供给客户端的密钥类型列表，以支持旧协议中的单点登录功能。其结构是使用 ASN.1 表示法定义的。语法如下：
 
-```ASN.1
+```c++
 KERB-KEY-LIST-REQ ::= SEQUENCE OF Int32 -- encryption type --
 ```
 
 KERB-KEY-LIST-REP 结构包含 KDC 提供给客户端的密钥类型列表，以支持旧协议中的单点登录功能。其结构语法如下：
 
-```ASN.1
+```c++
 KERB-KEY-LIST-REP ::= SEQUENCE OF EncryptionKey
 ```
 
