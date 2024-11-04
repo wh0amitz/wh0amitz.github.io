@@ -6,11 +6,11 @@ order: 4
 
 ## PS C:\Users\whoami> whoami
 
-I am just an ordinary student & security researcher, and what I have learned basically comes from the information security community and my own research. Through this blog, I will share some knowledge of cyber security.
+I am just an ordinary student & offensive security researcher & hacker, and what I have learned basically comes from the information security community and my own research.
 
 ## PS C:\Users\whoami> whoami /priv
 
-- Cyber Security: Red Team, Offensive Security, Security Research.
+- Cyber Security: Web Security, Active Directory, Kerberos, Post Exploitation
 - Programmer: C/C++, C#, Python, JAVA, PHP, Nodejs.
 - CTF: Web.
 - Weapon: QSZ-92, Type 54 Pistol, NRP-9.
