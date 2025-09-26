@@ -12,7 +12,7 @@ layout: post
 
 
 
-在下面这个场景中，一个普通域用户 Marcus 通过 Kerberos 协议认证到前台 Web 服务，并请求下载文件。但是由于文件存储在后台文件服务器（File Server）上，因此 Web 服务器的服务账号 WebSvc 将模拟域用户 Marcus，并以 Kerberos 协议继续认证到后台文件服务器。后台文件服务器将文件返回给前台的 Web 服务器，Web 服务器再将文件返回给域用户 Marcus。这就是域委派的一般过程。
+在以下这个场景中，一个普通域用户 Marcus 通过 Kerberos 协议认证到前台 Web 服务，并请求下载文件。但是由于文件存储在后台文件服务器（File Server）上，因此 Web 服务器的服务账号 WebSvc 将模拟域用户 Marcus，并以 Kerberos 协议继续认证到后台文件服务器。后台文件服务器将文件返回给前台的 Web 服务器，Web 服务器再将文件返回给域用户 Marcus。这就是域委派的一般过程。
 
 ![](/assets/posts/2022-03-12-domain-delegation-attack/YZ5Qw1cPoqFCNpJ.png)
 
