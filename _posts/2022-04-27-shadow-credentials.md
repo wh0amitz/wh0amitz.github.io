@@ -18,7 +18,7 @@ Will Schroeder（[@harmj0y](https://twitter.com/harmj0y)）和 Lee Christensen�
 
 在此之前，Michael Grafnetter 已经发现了这种滥用技术，并在 [Black Hat Europe 2019](https://www.dsinternals.com/wp-content/uploads/eu-19-Grafnetter-Exploiting-Windows-Hello-for-Business.pdf) 上展示了它。Michael 在他的演讲中清楚地展示了这种滥用行为，并解释了关于 WHfB 和 Key Trust 模型的一些内部工作原理。
 
-Michael 还一直在维护一个名为 [DSInternals](https://github.com/MichaelGrafnetter/DSInternals) 的库，它在现实中支持了这种机制的滥用。Elad Shamir 将 Michael 的一些代码移植到了一个名为 [Whisker](https://github.com/eladshamir/Whisker) 的新 C# 工具中，以便通过操作植入来使用。
+Michael 还一直在维护一个名为 [DSInternals](https://github.com/MichaelGrafnetter/DSInternals) 的项目，它在现实中支持了这种机制的滥用。Elad Shamir 将 Michael 的一些代码移植到了一个名为 [Whisker](https://github.com/eladshamir/Whisker) 的新 C# 工具中，以便通过操作植入来使用。
 
 ## What is PKINIT?
 
