@@ -1,16 +1,16 @@
 ---
-title: A Journey Into Dpapi And Chrome Theft
+title: From DPAPI to Chrome - A Journey to Entra ID Takeover
 date: 2025-09-30 18:22:00 +0800
 author: WHOAMI
 toc: true
 categories: ["Windows Security"]
-tags: ["Windows", "DPAPI", "Chrome"]
+tags: ["Windows", "DPAPI", "Chrome", "Microsoft Entra ID"]
 layout: post
 ---
 
 # Overview
 
-随着多因素认证（MFA）的广泛部署，直接窃取用户密码的难度大幅增加，越来越多的攻击者开始转向窃取浏览器 Cookie 作为突破口。然而现代浏览器如 Chrome 和 Edge 大都采用了 Windows 内置的 DPAPI 数据保护机制来加密这些敏感数据。
+随着多因素认证（MFA）的广泛部署，从浏览器中窃取用户密码的利用价值降低，越来越多的攻击者开始转向窃取浏览器 Cookie 作为突破口。然而现代浏览器如 Chrome 和 Edge 大都采用了 Windows 内置的 DPAPI 数据保护机制来加密这些敏感数据。
 
 在本文中，我们将深入探索 DPAPI 的概念和工作原理，解析它如何保护浏览器中的密码和 Cookie，并通过详细的步骤演示攻击者如何在建立立足点后，通过离线提取 MasterKey、破解 Chrome 最新的 App Bound 加密保护，最终成功解密 Cookie 并接管云服务会话的完整攻击链路。
 
@@ -217,6 +217,8 @@ dpapi::cred /in:".\Credentials\088E944D53AA5325DEBB316DAD22B476" /masterkey:"f72
 
 ## Decrypting Browser Cookies
 
+所有基于 Chromium 内核的浏览器，其 Cookie 数据通常都存储在本地 “User Data” 目录下的 `Cookies` 数据库中，并默认受到 DPAPI 的加密保护。本文将以 Chrome 浏览器为例，详细剖析其解密过程并进行演示。
+
 ### Old Decryption Primitive
 
 在 Google Chrome 127 版本之前，想要从 Chrome 浏览器中提取并解密 Cookies 相对容易，因为其存储遵循固定流程：所有的 Cookies 数据以 AES 加密后保存在位于 `%LocalAppData%\Google\Chrome\User Data\Default\Network\Cookies` 的SQLite 数据库文件中，而用于 AES 加密的密钥被 Chrome 生成并经过当前用户的 DPAPI MasterKey 保护后，以 Base64 编码形式存放在 JSON 格式的 `%LocalAppData%\Google\Chrome\User Data\Local State` 文件的 `os_crypt.encrypted_key` 字段内。
@@ -230,7 +232,7 @@ dpapi::cred /in:".\Credentials\088E944D53AA5325DEBB316DAD22B476" /masterkey:"f72
 
 ### App-Bound Decryption Primitive
 
-然而，在 Google Chrome 127 版本发布后，Google 开发团队在 Chrome 浏览器中引入了一种新的保护机制，它相较于传统的 DPAPI 进行了改进，提供了基于应用绑定的加密原语（App-Bound Encryption）。与过去任何以登录用户身份运行的应用都能访问这些数据不同，现在 Chrome 可以将数据加密与应用身份绑定在一起，这与 macOS 上的 Keychain 工作方式类似。
+在 Chrome 127 版本发布之后，所有存储在 Cookies 数据库中的加密 Cookie 值开头标识由原来的 `v10` 更新为 `v20`，这标志着加密机制发生了重要变化。Google 开发团队在 Chrome 浏览器中引入了一种新的保护机制，它相较于传统的 DPAPI 进行了改进，提供了基于应用绑定的加密原语（App-Bound Encryption）。与过去任何以登录用户身份运行的应用都能访问这些数据不同，现在 Chrome 可以将数据加密与应用身份绑定在一起，这与 macOS 上的 Keychain 工作方式类似。
 
 ![img](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/Screenshot 2024-07-26 2.15.06 PM.png)App‑Bound 加密依赖一个特权服务来验证发起请求的应用程序身份。在加密时，App‑Bound 加密服务会将应用的身份编码进加密数据中，并在尝试解密时验证该身份的有效性。如果系统上的另一个应用尝试解密同一份数据，解密将会失败。由于 App‑Bound 服务以系统权限运行，攻击者不能仅仅通过诱导用户运行恶意程序来获得数据访问权，他们现在必须获得系统级权限，或注入 Chrome 注入进程。
 
@@ -246,7 +248,7 @@ dpapi::cred /in:".\Credentials\088E944D53AA5325DEBB316DAD22B476" /masterkey:"f72
 - 在 Google Chrome 133 版本发布后，将加密算法更改为了 ChaCha20_Poly1305，但加密使用的密钥仍然硬编码在 “elevation_service.exe” 中。
 - 在 Google Chrome 137 之后，加密算法又恢复为 AES‑256‑GCM。同时，用于 AES‑256‑GCM 的对称密钥不再硬编码在 “elevation_service.exe” 中，而是作为一个随机生成的 `aes_key` 被附加到 “App‑Bound Key” 中。该 `aes_key` 会先与 “elevation_service.exe” 中硬编码的静态常量做一次 XOR 混淆，然后通过 Cryptography API: Next Generation (CNG) 对其进行加密。最终，经过加密的 `aes_key` 与加密后的 “App‑Bound Key” 一并存储，随后一起接受后续的两轮 DPAPI 保护。
 
-由此可见，Chrome 在多次演进后，对其 AES 密钥的保护机制发生了显著变化，使得攻击者窃取 Cookie 的难度大幅增加。与此同时，手动提取 Cookie 的流程变得更加复杂，且无法完全离线完成。下面，我们列出了在 Chrome 采用 App‑Bound 保护并使用最新加密保护链路的情况下，从浏览器中手动解密 Cookie 的逐步流程。
+由此可见，Chrome 在多次更新后，对其 AES 密钥的保护机制发生了显著变化，使得攻击者窃取 Cookie 的难度大幅增加。与此同时，手动提取 Cookie 的流程变得更加复杂，且无法完全离线完成。下面，我们列出了在 Chrome 采用 App‑Bound 保护并使用最新加密保护链路的情况下，从浏览器中手动解密 Cookie 的逐步流程。
 
 1. 定位目标用户的 Cookies 和 Local State 文件，并将其拷贝到本地。
 2. 从 Local State 中读取 `os_crypt.app_bound_encrypted_key` 的值，并对其做 Base64 解码后保存到文件中，得到一个被 DPAPI 保护的 Data BLOB。
@@ -365,7 +367,7 @@ dpapi::blob /in:".\decrypted_blob_1.bin" /masterkey:"f7207dc067794eca1d528ce941e
 
 如上图所示，返回结果中的 `data` 部分就是第二次解密得到的数据。我们可以将其转换为 Hexdump 的格式：
 
-```hexdump
+```Text
 00000000  1f 00 00 00 02 43 3a 5c 50 72 6f 67 72 61 6d 20  |.....C:\Program |
 00000010  46 69 6c 65 73 5c 47 6f 6f 67 6c 65 5c 43 68 72  |Files\Google\Chr|
 00000020  6f 6d 65 5d 00 00 00 03 34 d7 b9 27 48 af 91 d1  |ome]....4×¹'H¯.Ñ|
@@ -377,7 +379,7 @@ dpapi::blob /in:".\decrypted_blob_1.bin" /masterkey:"f7207dc067794eca1d528ce941e
 00000080  09 bf 6f 73                                      |.¿os|
 ```
 
-可以看到，经过两次 DPAPI 解密后，结果中首先出现 Chrome 的安装路径；然后跳过 `00 00 00 03` 标记开始，接下来的 92 个字节按顺序分别对应前文中提到的 ENCRYPTED_AES_KEY、IV、CIPHERTEXT和 TAG：
+可以看到，经过两次 DPAPI 解密后，结果中首先出现 Chrome 的安装路径；然后跳过 `00 00 00 03` 标记开始，接下来的 92 个字节按顺序分别对应前文中提到的 ENCRYPTED_AES_KEY、IV、CIPHERTEXT 和 TAG：
 
 ```cpp
 // ENCRYPTED_AES_KEY (32 bytes)
@@ -389,6 +391,12 @@ dpapi::blob /in:".\decrypted_blob_1.bin" /masterkey:"f7207dc067794eca1d528ce941e
 // TAG (16 bytes)
 c8 34 81 cc 61 71 1b ee 16 cc a9 c4 09 bf 6f 73
 ```
+
+> 这里为什么要关注 `00 00 00 03` 标记呢，因为它明确指示了 Chrome 使用何种算法对其 “App-Bound Key” 进行加密保护。不同标记对应的加密方案如下：
+>
+> -  `00 00 00 01`：使用 AES-256-GCM 算法，密钥硬编码在 “elevation_service.exe” 中。
+> -  `00 00 00 02`：使用 ChaCha20_Poly1305 算法，密钥硬编码在 “elevation_service.exe” 中。
+> -  `00 00 00 03`：使用 AES‑256‑GCM 算法，随机生成 `aes_key` 值作为密钥，并通过 CNG 对其进行保护。
 
 （7）编写以下 PowerShell 脚本，在目标主机上模拟 LSASS 进程的令牌，调用 CNG API 对 ENCRYPTED_AES_KEY 部分进行解密。然后，将解密后的结果与 “elevation_service.exe” 中硬编码的静态常量做一次 XOR 运算，得到 `aes_key` 的明文。
 
@@ -683,7 +691,7 @@ if __name__ == "__main__":
 
 在本案例中，为登录 OffsecLabs 组织的 Microsoft Entra ID，我们重点关注的认证 Cookie 包括 ESTSAUTH、ESTSAUTHPERSISTENT 与 ESTSAUTHLIGHT，这些 Cookie 表明对应用户最近在其 Azure 云资产上有过活动。
 
-因此，只需访问 login.microsoftonline.com 并注入 ESTSAUTHPERSISTENT 或 ESTSAUTH 等认证 Cookie，即可完成会话恢复并获得对目标会话的身份验证。如下图所示，最终成功以 Global Administrator 身份接管相关其 Microsoft Entra ID。
+因此，只需访问 login.microsoftonline.com 并注入 ESTSAUTHPERSISTENT 或 ESTSAUTH 等认证 Cookie，即可完成会话恢复并获得对目标会话的身份验证。如下图所示，最终成功以 Global Administrator 身份接管其 Microsoft Entra ID。
 
 ![Animation](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/Animation.gif)
 
