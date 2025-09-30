@@ -403,7 +403,7 @@ c8 34 81 cc 61 71 1b ee 16 cc a9 c4 09 bf 6f 73
 - Decrypt-ChromeCngEncryptedAesKey.ps1
 
 ```powershell
-# Get-ChromeAesKey.ps1
+# Decrypt-ChromeCngEncryptedAesKey.ps1
 # Chrome AES Key Decryption via CNG with XOR Finalization
 
 Add-Type -TypeDefinition @"
