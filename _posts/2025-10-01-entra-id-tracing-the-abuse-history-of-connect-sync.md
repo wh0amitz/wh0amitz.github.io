@@ -129,7 +129,7 @@ sMSA 功能需要 Windows Server 2012 或更高版本。如果你使用更早版
 
 ![](/assets/posts/2025-10-01-entra-id-tracing-the-abuse-history-of-connect-sync/account-3.png)
 
-该 AAD_ 服务账户使用一个复杂且不会过期的长密码创建。
+该 `AAD_*` 服务账户使用一个复杂且不会过期的长密码创建。
 
 此账户用于安全存储其他账户的密码。这些密码以加密形式保存在数据库中，密钥的私钥通过 Windows 数据保护 API（DPAPI）利用加密服务的密钥加密进行保护。
 
@@ -500,6 +500,8 @@ mms_server_configuration 表主要用于存储与服务器相关的全局配置�
 在 Azure AD Connect 1.4.x 之前，为了解密 “encrypted_configuration” 字段中保存的加密凭据，微软使用了一个以加密形式存放在注册表中的密钥集（Keyset）。密钥集的 ID 则保存在 “mms_server_configuration” 表中，对应的密钥集实体位于注册表路径 `HKLM\Software\Microsoft\Ad Sync\Shared\[keysetid]` 中。
 
 该密钥集受到系统的 MasterKey 保护，可以结合 “mms_server_configuration” 表中存储的熵值，通过 DPAPI 来解密。密钥集一旦被解密，其包含的密钥即可用于解密数据库中存储的加密属性。
+
+> 关于 DPAPI 的技术细节，可以阅读我的这篇博客：[“From DPAPI to Chrome - A Journey to Entra ID Takeover”](https://whoamianony.top/posts/from-dpapi-to-chrome-a-journey-to-entra-id-takeover/)
 
 ![AD Sync decrypt flow](/assets/posts/2025-10-01-entra-id-tracing-the-abuse-history-of-connect-sync/dpapiflow-20251001000752689.svg)
 
