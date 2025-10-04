@@ -1,6 +1,6 @@
 ---
 title: Entra ID - Revisiting the Abuse History of Connect Sync
-date: 2025-10-01 02:26:08 +0800
+date: 2025-10-03 13:26:08 +0800
 author: WHOAMI
 toc: true
 categories: ["Microsoft Entra ID"]
@@ -906,6 +906,8 @@ Remove-MgDirectoryRoleMemberByRef -DirectoryRoleId $dirSyncRole.Id -DirectoryObj
 > https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/reference-connect-accounts-permissions
 >
 > https://dirkjanm.io/updating-adconnectdump-a-journey-into-dpapi/
+>
+> https://blog.xpnsec.com/azuread-connect-for-redteam/
 >
 > https://aadinternals.com/post/adsync/
 >
