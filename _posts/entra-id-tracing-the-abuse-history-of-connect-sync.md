@@ -1,6 +1,6 @@
 ---
 title: Entra ID - Revisiting the Abuse History of Connect Sync
-date: 2025-10-03 13:26:08 +0800
+date: 2025-10-06 13:26:08 +0800
 author: WHOAMI
 toc: true
 categories: ["Microsoft Entra ID"]
