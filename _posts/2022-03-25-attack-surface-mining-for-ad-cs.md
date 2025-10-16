@@ -1,5 +1,5 @@
 ---
-title: Attack Surface Mining For AD CS
+title: Certified Pre-Owned - Abusing Active Directory Certificate Services
 date: 2022-03-15 16:25:00 +0800
 author: WHOAMI
 toc: true
