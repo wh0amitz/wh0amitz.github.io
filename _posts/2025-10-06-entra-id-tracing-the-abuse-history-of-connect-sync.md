@@ -12,7 +12,7 @@ layout: post
 
 Microsoft Entra Connect（前身为 Azure AD Connect）作为微软混合身份环境的核心枢纽，已成为现代企业、组织的身份基础设施中至关重要的组件。它通过在本地 Active Directory 与 Microsoft Entra ID（前身为 Azure AD）之间建立同步桥梁，实现了身份信息的无缝流动。然而，这种强大的连接能力也使其成为攻击者极具吸引力的目标。
 
-本文全面回溯了 Microsoft Entra Connect 同步服务（Connect Sync）的安全风险与攻击面，包括以下内容
+本文全面回溯了 Microsoft Entra Connect 同步服务（Connect Sync）的安全风险与攻击面，包括以下内容：
 
 - 攻击者如何通过获取 Connect Sync 服务器访问权限，进而提取和解密存储在本地数据库中的高权限凭据。这些凭据包括具有 DCSync 权限的本地 AD 连接器账户，以及在 Microsoft Entra ID 中拥有特权角色的云同步账户。
 - 攻击者如何利用本地 AD 连接器账户执行 DCSync 攻击以转储所有本地域哈希。
