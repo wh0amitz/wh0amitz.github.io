@@ -473,8 +473,9 @@ PTA 代理每十分钟重复步骤 1 至 4 以刷新引导文档，并会根据�
 4.  PTA 代理与该 Microsoft Entra 应用程序代理建立 WebSocket 连接，连接的端点类似于 `vm0-proxy-pta-scus-sn3p-2.connector.his.msappproxy.net:443 `。同样，这是一个 HTTPS 连接（WebSocket），并使用 PTA 注册过程中申请到的证书执行身份验证。
 5.  与 Microsoft Entra 应用程序代理连接就绪后，PTA 代理会访问类似于 `https://vm0-proxy-pta-scus-sn3p-2.connector.his.msappproxy.net/subscriber/websocketconnect?requestId=f8915964-975b-4b6f-8fed-99511f72c807` 的 URL 地址。后续就会收到用户的实际身份验证消息，其格式类似于以下 JSON 数据：
 
-```json
-{	"__type": "SignalMessage:#Microsoft.ApplicationProxy.Common.SignalingDataModel",
+```
+{
+	"__type": "SignalMessage:#Microsoft.ApplicationProxy.Common.SignalingDataModel",
 	"RequestId": "858809ba-30e5-4bcb-af5c-378bcd250300",
 	"SessionId": "00000000-0000-0000-0000-000000000000",
 	"SubscriptionId": "ae11aea0-4e67-438a-80a8-d877c5d4a885",
@@ -493,11 +494,13 @@ PTA 代理每十分钟重复步骤 1 至 4 以刷新引导文档，并会根据�
 			"__type": "PasswordValidationContext",
 			"TrafficProtocol": 2,
 			"Domain": "COMPANY",
-			"EncryptedData": [{
+			"EncryptedData": [
+				{
 					"__type": "EncryptedOnPremValidationData:#Microsoft.ApplicationProxy.Common.SignalingDataModel",
 					"Base64EncryptedData": "CFhEmbziFkQwRCI4KzidnvmJjikWx62CsypowLs2PXtPb9suC4b\/ssAyvigsVrjXd2Uq0HLtn+G1OZcvFvzZM8aXVYXY7nno2fOh6gdo2K9NVjl89AnHaTiovs7z7JEkmF\/mzxe3bZNQxZhhd39J4LteadFLzQEfAEaAIifhKSywZfF7aK36RsOgYVFWQ06wcxsZkqSueYkZ3d8ITZYp7w4MUHsXQ8UDN8nUtJRflS7kpGj1LElPINCVBXZ0w1i9vuVKYxaSRkob1y57MEibFH8WnSFbVbt7hjldSQ\/\/sgVpVfiR0NPob6LYZCdrvYTGERPE7T2191qtJ70nwG4TrA==",
 					"KeyIdentifer": "7d40765f-5e41-45d8-b3af-16123bc727cb_97C89CBDDA59AE2A619F31D8F6DE02933FFBD6D6"
-				}, {
+				},
+				{
 					"__type": "EncryptedOnPremValidationData:#Microsoft.ApplicationProxy.Common.SignalingDataModel",
 					"Base64EncryptedData": "yJGy9ghD4I92dYPlAq68EqZZX9DwBucCQE2mWqj8m41M0oGzCqLmn98khaD\/6n2ePiInljB240DqKsUADVExrjsfO4fZeilDsOjoOioZbMtH7QiQYGwsDVn1HuUbZQuZPBCq9iHx4YN7glNkR8\/5JWOLZLf\/VpJ+kTid4agXV\/6MwaQtFIRPhVVKHvMhbvzwxYsTXVUt2XXSTqQU37OeagmUYvdmMHWoED6zlWFuW+B0lGmdWj6w6hCARZQCQSPKTVxRBRYjnpPk+kzcVs4GdEOc9QkBWRvQ5KimgECrINEkzVyVgMjcRdVdnKENiSWlZf\/\/XLWaL55\/PtOXxdzQCg==",
 					"KeyIdentifer": "5905551d-8eb1-4f23-a041-5bcf0919a331_FFFE8C5F086B1EA51F76BEE0D183DE9FA38BA86C"
