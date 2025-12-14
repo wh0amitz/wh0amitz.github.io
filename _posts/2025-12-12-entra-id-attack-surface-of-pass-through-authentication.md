@@ -1,6 +1,6 @@
 ---
 title: Entra ID - Attack Surface of Pass-through Authentication (PTA)
-date: 2025-112-12 15:12:36 +0800
+date: 2025-12-12 15:12:36 +0800
 author: WHOAMI
 toc: true
 categories: ["Microsoft Entra ID"]
